@@ -47,11 +47,12 @@ deliverak/
 │   ├── vendor/            # Vendor mobile app (Android + iOS)
 │   └── admin/             # Admin panel (Flutter Web)
 ├── packages/
-│   ├── core/              # Models, enums, constants, utils
-│   ├── firebase_services/ # Firestore, Auth, FCM wrappers
-│   ├── repositories/      # Data layer (Firestore CRUD)
-│   ├── providers/         # Cubit providers (state logic)
-│   └── ui_kit/            # Shared widgets, themes, assets
+│   ├── core/              # Models, enums, constants, utils, exceptions, interfaces
+│   ├── firebase_services/ # Firebase service implementations (implements core interfaces)
+│   ├── cloudinary_service/ # Cloudinary service implementation (implements core interfaces)
+│   ├── repositories/      # Repository implementations (implements domain interfaces)
+│   ├── providers/         # Cubits (depends on repository interfaces)
+│   └── ui_kit/            # Shared widgets, themes, design tokens
 ```
 
 ---
@@ -65,8 +66,8 @@ lib/
 ├── config/                # Firebase init, environment, routes
 ├── features/              # Feature-based modules
 │   ├── auth/
-│   │   ├── data/          # Data sources, repository implementations
-│   │   ├── domain/        # Models, repository interfaces
+│   │   ├── domain/        # Models, repository interfaces (abstractions)
+│   │   ├── data/          # Repository implementations
 │   │   ├── cubit/         # Cubit + States
 │   │   └── presentation/  # Screens, widgets
 │   ├── home/
@@ -77,34 +78,273 @@ lib/
 └── shared/                # App-level shared widgets
 ```
 
+**Dependency Flow (DIP):** Presentation → Domain (interfaces) ← Data
+
+---
+
+## SOLID Principles
+
+All code across the Deliverak ecosystem follows SOLID principles for maintainable, testable, and scalable architecture.
+
+### S — Single Responsibility Principle
+
+Each class, module, and function has **one reason to change**.
+
+```
+packages/
+├── core/
+│   ├── models/         # Only data structure definitions
+│   ├── enums/          # Only enumeration values
+│   ├── utils/          # Only utility functions (validators, formatters)
+│   └── exceptions/     # Only custom exception types
+├── firebase_services/
+│   ├── auth_service.dart       # Only Firebase Auth operations
+│   ├── firestore_service.dart  # Only Firestore CRUD operations
+│   └── fcm_service.dart        # Only FCM messaging operations
+├── cloudinary_service/
+│   └── cloudinary_service.dart # Only Cloudinary upload/transform operations
+├── repositories/
+│   ├── auth_repository.dart       # Only auth business logic
+│   ├── vendor_repository.dart     # Only vendor data operations
+│   └── ...                        # One repository per domain entity
+├── providers/
+│   ├── auth_cubit.dart       # Only auth UI state management
+│   ├── vendor_cubit.dart     # Only vendor UI state management
+│   └── ...                   # One cubit per feature screen
+└── ui_kit/
+    ├── tokens/    # Only design constants (colors, typography, spacing)
+    ├── theme/     # Only theme configuration
+    └── widgets/   # Only reusable UI components
+```
+
+**Rule:** A repository never manages UI state. A cubit never touches Firestore directly. A widget never contains business logic.
+
+### O — Open/Closed Principle
+
+Modules are **open for extension, closed for modification**. Use abstract classes and interfaces to allow new implementations without changing existing code.
+
+```dart
+// domain/repositories/auth_repository.dart
+abstract class IAuthRepository {
+  Future<UserModel?> signInWithCredential(PhoneAuthCredential credential);
+  Future<UserModel?> getCurrentUser();
+  Future<void> signOut();
+}
+
+// data/repositories/auth_repository_impl.dart
+class AuthRepositoryImpl implements IAuthRepository {
+  final IAuthService _authService;
+  final IFirestoreService _firestoreService;
+
+  AuthRepositoryImpl({
+    required IAuthService authService,
+    required IFirestoreService firestoreService,
+  })  : _authService = authService,
+        _firestoreService = firestoreService;
+
+  @override
+  Future<UserModel?> signInWithCredential(PhoneAuthCredential credential) async {
+    // Implementation details
+  }
+}
+```
+
+**Rule:** New payment gateway? Create `StripePaymentService implements IPaymentService` without modifying existing payment code.
+
+### L — Liskov Substitution Principle
+
+Subtypes must be **substitutable** for their base types without breaking behavior.
+
+```dart
+// All services implement their interfaces
+abstract class IFirestoreService {
+  Future<void> setDocument({required String collection, required String documentId, required Map<String, dynamic> data});
+  Future<DocumentSnapshot> getDocument({required String collection, required String documentId});
+  Stream<DocumentSnapshot> watchDocument({required String collection, required String documentId});
+}
+
+// Real implementation
+class FirestoreServiceImpl implements IFirestoreService { ... }
+
+// Mock for testing (substitutable)
+class MockFirestoreService implements IFirestoreService { ... }
+
+// Test code works identically
+void testAuthRepository() {
+  final mockFirestore = MockFirestoreService();
+  final repo = AuthRepositoryImpl(
+    authService: MockAuthService(),
+    firestoreService: mockFirestore, // Substituted without breaking
+  );
+}
+```
+
+**Rule:** Any implementation of `IFirestoreService` must behave consistently — real Firestore, mock, or fake.
+
+### I — Interface Segregation Principle
+
+**Many small, specific interfaces** rather than one large, general-purpose interface.
+
+```dart
+// ❌ BAD — One fat interface
+abstract class IService {
+  Future<void> signIn();
+  Future<void> signOut();
+  Future<void> getDocument();
+  Future<void> setDocument();
+  Future<void> uploadFile();
+  Future<void> deleteFile();
+  Future<void> sendMessage();
+}
+
+// ✅ GOOD — Segregated interfaces
+abstract class IAuthService {
+  Future<UserCredential> signIn(PhoneAuthCredential credential);
+  Future<void> signOut();
+}
+
+abstract class IFirestoreService {
+  Future<void> setDocument({required String collection, required String documentId, required Map<String, dynamic> data});
+  Future<DocumentSnapshot> getDocument({required String collection, required String documentId});
+}
+
+abstract class IStorageService {
+  Future<CloudinaryUploadResult> uploadFile({required String filePath, required String folder});
+  Future<void> deleteFile(String publicId);
+}
+
+abstract class INotificationService {
+  Future<void> sendMessage({required String token, required String title, required String body});
+}
+```
+
+**Rule:** A repository that only reads Firestore doesn't depend on `IStorageService`. Dependencies stay minimal and focused.
+
+### D — Dependency Inversion Principle
+
+**Depend on abstractions (interfaces), not concretions (implementations).** High-level modules don't depend on low-level modules — both depend on abstractions.
+
+```dart
+// ❌ BAD — Cubit depends on concrete class
+class AuthCubit extends Cubit<AuthState> {
+  final AuthRepository _repo; // Concrete class
+  AuthCubit(this._repo) : super(AuthInitial());
+}
+
+// ✅ GOOD — Cubit depends on abstraction
+class AuthCubit extends Cubit<AuthState> {
+  final IAuthRepository _repo; // Abstract interface
+  AuthCubit(this._repo) : super(AuthInitial());
+}
+
+// Dependency injection via constructor
+// main.dart — Composition Root
+final authRepository = AuthRepositoryImpl(
+  authService: FirebaseAuthServiceImpl(),
+  firestoreService: FirestoreServiceImpl(),
+);
+
+runApp(
+  RepositoryProvider<IAuthRepository>(
+    create: (_) => authRepository,
+    child: BlocProvider<AuthCubit>(
+      create: (context) => AuthCubit(
+        authRepository: context.read<IAuthRepository>(), // Depends on abstraction
+      ),
+    ),
+  ),
+);
+```
+
+### SOLID Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Presentation Layer                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │
+│  │  Screens  │  │ Widgets  │  │  Cubits  │  │ States  │ │
+│  └────┬─────┘  └──────────┘  └────┬─────┘  └─────────┘ │
+│       │                           │                      │
+├───────┼───────────────────────────┼──────────────────────┤
+│       │          Domain Layer     │                      │
+│  ┌────▼─────────────────────────▼────┐                  │
+│  │     Repository Interfaces (DIP)    │                  │
+│  │     IAuthRepository                │                  │
+│  │     IVendorRepository              │                  │
+│  │     IProductRepository             │                  │
+│  └────────────────┬──────────────────┘                  │
+│                   │                                      │
+├───────────────────┼──────────────────────────────────────┤
+│                   │          Data Layer                   │
+│  ┌────────────────▼──────────────────┐  ┌─────────────┐ │
+│  │  Repository Implementations (SRP) │  │   Services   │ │
+│  │  AuthRepositoryImpl                │◄─┤   (ISP)      │ │
+│  │  VendorRepositoryImpl              │  │  IAuthService│ │
+│  │  ProductRepositoryImpl             │  │  IFirestore  │ │
+│  └────────────────────────────────────┘  │  IStorage   │ │
+│                                          └─────────────┘ │
+└─────────────────────────────────────────────────────────┘
+
+Key: DIP = Dependency Inversion    SRP = Single Responsibility
+     ISP = Interface Segregation   OCP = Open/Closed
+```
+
+### SOLID Checklist for Code Reviews
+
+- [ ] Does each class have exactly one responsibility?
+- [ ] Are all dependencies injected via constructors (no `new FirestoreService()` inside business logic)?
+- [ ] Do Cubits depend on repository interfaces, not implementations?
+- [ ] Can each interface be replaced with a mock for testing?
+- [ ] Are interfaces small and focused (3–5 methods max)?
+- [ ] Can new features be added without modifying existing code?
+- [ ] Are services segregated by concern (auth, storage, messaging, database)?
+
 ---
 
 ## Cubit Pattern
+
+All Cubits follow SOLID principles: depend on repository **interfaces**, not implementations.
 
 ### State Definition
 
 ```dart
 // auth_state.dart
-abstract class AuthState {}
+abstract class AuthState extends Equatable {
+  const AuthState();
+  @override
+  List<Object?> get props => [];
+}
+
 class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
+
 class Authenticated extends AuthState {
   final UserModel user;
-  Authenticated(this.user);
+  const Authenticated(this.user);
+  @override
+  List<Object?> get props => [user];
 }
+
 class AuthError extends AuthState {
   final String message;
-  AuthError(this.message);
+  final String? code;
+  final bool isRetryable;
+  const AuthError({required this.message, this.code, this.isRetryable = false});
+  @override
+  List<Object?> get props => [message, code, isRetryable];
 }
 ```
 
-### Cubit Implementation
+### Cubit Implementation (DIP — depends on abstraction)
 
 ```dart
 // auth_cubit.dart
 class AuthCubit extends Cubit<AuthState> {
-  final AuthRepository _repo;
-  AuthCubit(this._repo) : super(AuthInitial());
+  final IAuthRepository _repo;  // ← Depends on INTERFACE, not AuthRepositoryImpl
+
+  AuthCubit({required IAuthRepository repo})
+      : _repo = repo,
+        super(AuthInitial());
 
   Future<void> signInWithPhone(String phone) async {
     emit(AuthLoading());
@@ -112,8 +352,45 @@ class AuthCubit extends Cubit<AuthState> {
       final user = await _repo.signInWithPhone(phone);
       emit(Authenticated(user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(AuthError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: e is AppException ? e.isRetryable : false,
+      ));
     }
+  }
+}
+```
+
+### Repository Interface (ISP — small, focused interface)
+
+```dart
+// domain/repositories/auth_repository.dart (abstraction)
+abstract class IAuthRepository {
+  Future<UserModel?> signInWithPhone(String phoneNumber);
+  Future<UserModel?> getCurrentUser();
+  Future<void> updateProfile({required String uid, String? name, String? profileImage});
+  Future<void> signOut();
+}
+```
+
+### Repository Implementation (SRP — single responsibility)
+
+```dart
+// data/repositories/auth_repository_impl.dart
+class AuthRepositoryImpl implements IAuthRepository {
+  final IAuthService _authService;       // ← Depends on abstraction
+  final IFirestoreService _firestoreService; // ← Depends on abstraction
+
+  AuthRepositoryImpl({
+    required IAuthService authService,
+    required IFirestoreService firestoreService,
+  })  : _authService = authService,
+        _firestoreService = firestoreService;
+
+  @override
+  Future<UserModel?> signInWithPhone(String phoneNumber) async {
+    // Implementation only — business logic for auth
   }
 }
 ```
@@ -267,32 +544,39 @@ notifications/
 - Custom exceptions (AppException, NetworkException, AuthException)
 - Error code constants for consistent error mapping
 
-### `firebase_services`
-- FirebaseAuthService (phone auth, OTP)
-- FirestoreService (CRUD operations, streams)
-- FCMService (token management, local notifications)
+### `firebase_services` (implements interfaces from `core`)
+- FirebaseAuthService implements IAuthService (phone auth, OTP)
+- FirestoreService implements IFirestoreService (CRUD operations, streams)
+- FCMService implements INotificationService (token management, push notifications)
 
-### `cloudinary_service`
-- CloudinaryService (image upload, delete, transform)
+### `cloudinary_service` (implements interface from `core`)
+- CloudinaryService implements IStorageService (image upload, delete, transform)
 - Upload preset & folder management
 - URL generation with transformations
 
-### `repositories`
-- AuthRepository
-- VendorRepository
-- ProductRepository
-- OrderRepository
-- DriverRepository
-- NotificationRepository
+### `repositories` (implements repository interfaces from `domain/`)
+- AuthRepository implements IAuthRepository
+- VendorRepository implements IVendorRepository
+- ProductRepository implements IProductRepository
+- OrderRepository implements IOrderRepository
+- DriverRepository implements IDriverRepository
+- NotificationRepository implements INotificationRepository
+
+### `providers` (Cubits — depends on repository interfaces)
+- AuthCubit depends on IAuthRepository
+- VendorCubit depends on IVendorRepository
+- ProductCubit depends on IProductRepository
+- CartCubit (standalone, no dependencies)
+- OrderCubit depends on IOrderRepository
+- NotificationCubit depends on INotificationRepository
 
 ### `ui_kit`
-- App theme (Material 3 colors, typography scale, spacing system)
 - Design tokens (colors.dart, typography.dart, spacing.dart, radius.dart)
-- Common widgets (buttons, cards, dialogs, loaders)
-- Adaptive widgets (AdaptiveScaffold, AdaptiveDialog, ResponsivePadding)
-- Loading states (AppShimmer skeleton loader, progress indicators)
-- State widgets (EmptyState, ErrorState with illustrations)
-- Assets (images, icons, fonts)
+- App theme (Material 3 light + dark themes)
+- Adaptive widgets (AdaptiveScaffold, AdaptiveDialog)
+- Loading states (AppShimmer skeleton loader)
+- State widgets (EmptyState, ErrorState)
+- Common widgets (AppButton, AppCard, AppLoader, AppDialog)
 
 ---
 
@@ -315,6 +599,9 @@ notifications/
 
 6. **Cloudinary over Firebase Storage?**
    → Firebase Storage removed from free Spark plan (Feb 2026). Cloudinary offers 25GB free storage + 25GB bandwidth/month with built-in CDN and image transformations. No credit card required for free tier.
+
+7. **Interface-based architecture (SOLID)?**
+   → All services and repositories depend on abstractions, not implementations. Cubits depend on repository interfaces. Enables easy testing with mocks, and new implementations without modifying existing code.
 
 ---
 

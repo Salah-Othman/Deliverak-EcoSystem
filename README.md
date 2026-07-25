@@ -34,9 +34,9 @@ deliverak/
 │   ├── vendor/            # Vendor mobile app
 │   └── admin/             # Admin panel (Flutter Web)
 ├── packages/
-│   ├── core/              # Models, enums, constants, utils
-│   ├── firebase_services/ # Firebase wrappers (Auth, Firestore, FCM)
-│   ├── cloudinary_service/ # Cloudinary upload, transforms, CDN
+│   ├── core/              # Models, enums, constants, utils, exceptions, interfaces
+│   ├── firebase_services/ # Firebase service implementations (implements core interfaces)
+│   ├── cloudinary_service/ # Cloudinary service implementation (implements core interfaces)
 │   ├── repositories/      # Data layer (Firestore CRUD)
 │   ├── providers/         # Cubit state logic
 │   └── ui_kit/            # Shared widgets, themes, adaptive components, design tokens
@@ -171,17 +171,46 @@ melos run admin:web          # Run admin panel on web
 
 ## Architecture
 
-Each app follows a clean architecture pattern:
+Each app follows a clean architecture pattern with SOLID principles:
 
 ```
 feature/
-├── data/          # Repository implementations, data sources
-├── domain/        # Models, repository interfaces
-├── cubit/         # Cubit + State classes
+├── domain/        # Models, repository interfaces (abstractions)
+├── data/          # Repository implementations
+├── cubit/         # Cubit + State classes (depends on interfaces)
 └── presentation/  # Screens, widgets
 ```
 
+**Dependency Flow:** Presentation → Domain (interfaces) ← Data
+
 See [plan.md](plan.md) for detailed architecture documentation.
+
+## SOLID Principles
+
+All code across the Deliverak ecosystem follows SOLID principles:
+
+- **S — Single Responsibility** — Each class has one job: repositories handle data, cubits manage state, services wrap APIs, widgets render UI
+- **O — Open/Closed** — New payment gateways, storage providers, or notification channels added via interfaces without modifying existing code
+- **L — Liskov Substitution** — All repository and service implementations are interchangeable (mock for testing, real for production)
+- **I — Interface Segregation** — Small, focused interfaces (`IAuthService`, `IFirestoreService`, `IStorageService`) instead of one fat interface
+- **D — Dependency Inversion** — Cubits depend on repository interfaces, not implementations. Repositories depend on service interfaces. All wiring in the composition root (`main.dart`).
+
+```dart
+// Cubit depends on abstraction (DIP)
+class AuthCubit extends Cubit<AuthState> {
+  final IAuthRepository _repo;  // Interface, not concrete class
+  AuthCubit({required IAuthRepository repo}) : _repo = repo, super(AuthInitial());
+}
+
+// Repository depends on service abstractions (DIP)
+class AuthRepositoryImpl implements IAuthRepository {
+  final IAuthService _authService;
+  final IFirestoreService _firestoreService;
+  AuthRepositoryImpl({required IAuthService authService, required IFirestoreService firestoreService});
+}
+```
+
+See [plan.md](plan.md#solid-principles) for full SOLID architecture diagrams and code examples.
 
 ## Security
 
