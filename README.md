@@ -18,8 +18,9 @@ Deliverak is a full delivery ecosystem consisting of four applications:
 - **Flutter 3.x** — Cross-platform UI
 - **Cubit (flutter_bloc)** — State management
 - **GoRouter** — Navigation & routing
-- **Firebase** — Backend (Auth, Firestore, Functions, FCM)
+- **Firebase** — Backend (Auth, Firestore, Functions, FCM, Crashlytics)
 - **Cloudinary** — Image/file storage, CDN, transformations
+- **flutter_secure_storage** — Encrypted local storage
 - **Melos** — Monorepo management
 - **Google Maps** — Live GPS tracking
 
@@ -38,7 +39,7 @@ deliverak/
 │   ├── cloudinary_service/ # Cloudinary upload, transforms, CDN
 │   ├── repositories/      # Data layer (Firestore CRUD)
 │   ├── providers/         # Cubit state logic
-│   └── ui_kit/            # Shared widgets, themes, assets
+│   └── ui_kit/            # Shared widgets, themes, adaptive components, design tokens
 ├── melos.yaml
 └── plan.md
 ```
@@ -182,6 +183,47 @@ feature/
 
 See [plan.md](plan.md) for detailed architecture documentation.
 
+## Security
+
+- **Firestore Security Rules** — Role-based access control on every collection
+- **Input Validation** — Client-side + server-side (Cloud Functions) validation
+- **Secure Storage** — `flutter_secure_storage` for tokens and sensitive data
+- **API Key Management** — Keys in env config, never hardcoded
+- **Server-side Validation** — Cloud Functions verify order totals, driver assignments, status transitions
+
+## Error Handling
+
+- **Global Error Handler** — Catches all uncaught Flutter and async errors
+- **Standardized Cubit States** — Every Cubit uses `Initial`, `Loading`, `Loaded`, `Error` with retry support
+- **Error Mapping** — Technical exceptions translated to user-friendly messages
+- **Retry Logic** — Exponential backoff for transient errors (network, timeout)
+- **Graceful Degradation** — Offline support with cached data, safe fallback states
+
+## Performance
+
+- **Image Optimization** — Cloudinary transforms (`q_auto`, `f_auto`), `cached_network_image` with disk cache
+- **Firestore Optimization** — Composite indexes, pagination with `limit()` + `startAfterDocument()`
+- **Widget Performance** — `const` constructors, `RepaintBoundary`, `ListView.builder`, `BlocSelector`
+- **Memory Management** — Proper `dispose()` for all controllers and subscriptions
+- **GPS Optimization** — Throttled location updates (5s), marker reuse, background pause
+
+## Responsive & Adaptive UI
+
+- **LayoutBuilder** — Mobile (<600px), Tablet (600–1023px), Desktop (1024px+)
+- **Adaptive Widgets** — `AdaptiveScaffold`, `AdaptiveDialog`, `ResponsivePadding`
+- **Orientation** — Both orientations supported, locked for camera/OTP screens
+- **Safe Areas** — Notch, punch-hole, and gesture navigation handling
+- **Web Admin** — Sidebar navigation, sticky headers, table layouts, hover states
+
+## Modern UI Design
+
+- **Material 3** — Full Material You theming with dynamic color support
+- **Design Tokens** — Centralized colors, typography scale, spacing system, border radius
+- **Dark Mode** — Complete dark theme, user preference stored in SharedPreferences
+- **Animations** — Page transitions, micro-interactions, staggered list entry, state transitions
+- **Loading States** — Skeleton/shimmer loading, progress indicators, no full-screen spinners
+- **Empty & Error States** — Custom illustrations, actionable empty states, consistent error widgets
+
 ## Roadmap
 
 - [ ] Phase 1: Project setup, Auth, Profile
@@ -190,7 +232,7 @@ See [plan.md](plan.md) for detailed architecture documentation.
 - [ ] Phase 4: Driver app, GPS tracking
 - [ ] Phase 5: Vendor app, Order management
 - [ ] Phase 6: Admin web panel
-- [ ] Phase 7: Notifications, Polish, Testing
+- [ ] Phase 7: Notifications, Security, Performance, Error handling, Responsive UI, Dark mode, Testing
 
 ## License
 
