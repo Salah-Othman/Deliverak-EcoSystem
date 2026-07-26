@@ -38,20 +38,41 @@ class FirestoreService implements IFirestoreService {
     return await _firestore.collection(collection).doc(documentId).get();
   }
 
-  @override
-  Future<QuerySnapshot> getDocuments({
-    required String collection,
-    List<List<dynamic>>? where,
+  Query _buildQuery(
+    String collection, {
+    List<QueryCondition>? where,
     String? orderBy,
     bool descending = false,
     int? limit,
-  }) async {
+  }) {
     Query query = _firestore.collection(collection);
 
     if (where != null) {
       for (final condition in where) {
-        if (condition.length == 3) {
-          query = query.where(condition[0], isEqualTo: condition[1]);
+        switch (condition.operator) {
+          case QueryOperator.isEqualTo:
+            query = query.where(condition.field, isEqualTo: condition.value);
+          case QueryOperator.isNotEqualTo:
+            query = query.where(condition.field, isNotEqualTo: condition.value);
+          case QueryOperator.isLessThan:
+            query = query.where(condition.field, isLessThan: condition.value);
+          case QueryOperator.isLessThanOrEqualTo:
+            query = query.where(
+              condition.field,
+              isLessThanOrEqualTo: condition.value,
+            );
+          case QueryOperator.isGreaterThan:
+            query = query.where(condition.field, isGreaterThan: condition.value);
+          case QueryOperator.isGreaterThanOrEqualTo:
+            query = query.where(
+              condition.field,
+              isGreaterThanOrEqualTo: condition.value,
+            );
+          case QueryOperator.arrayContains:
+            query = query.where(
+              condition.field,
+              arrayContains: condition.value,
+            );
         }
       }
     }
@@ -64,6 +85,24 @@ class FirestoreService implements IFirestoreService {
       query = query.limit(limit);
     }
 
+    return query;
+  }
+
+  @override
+  Future<QuerySnapshot> getDocuments({
+    required String collection,
+    List<QueryCondition>? where,
+    String? orderBy,
+    bool descending = false,
+    int? limit,
+  }) async {
+    final query = _buildQuery(
+      collection,
+      where: where,
+      orderBy: orderBy,
+      descending: descending,
+      limit: limit,
+    );
     return await query.get();
   }
 
@@ -78,29 +117,18 @@ class FirestoreService implements IFirestoreService {
   @override
   Stream<QuerySnapshot> watchDocuments({
     required String collection,
-    List<List<dynamic>>? where,
+    List<QueryCondition>? where,
     String? orderBy,
     bool descending = false,
     int? limit,
   }) {
-    Query query = _firestore.collection(collection);
-
-    if (where != null) {
-      for (final condition in where) {
-        if (condition.length == 3) {
-          query = query.where(condition[0], isEqualTo: condition[1]);
-        }
-      }
-    }
-
-    if (orderBy != null) {
-      query = query.orderBy(orderBy, descending: descending);
-    }
-
-    if (limit != null) {
-      query = query.limit(limit);
-    }
-
+    final query = _buildQuery(
+      collection,
+      where: where,
+      orderBy: orderBy,
+      descending: descending,
+      limit: limit,
+    );
     return query.snapshots();
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -38,10 +40,17 @@ class NotificationError extends NotificationState {
 
 class NotificationCubit extends Cubit<NotificationState> {
   final INotificationRepository _notificationRepository;
+  StreamSubscription<List<NotificationModel>>? _notificationsSubscription;
 
   NotificationCubit({required INotificationRepository notificationRepository})
       : _notificationRepository = notificationRepository,
         super(NotificationInitial());
+
+  @override
+  Future<void> close() {
+    _notificationsSubscription?.cancel();
+    return super.close();
+  }
 
   Future<void> loadNotifications(String userId) async {
     emit(NotificationLoading());
@@ -58,16 +67,22 @@ class NotificationCubit extends Cubit<NotificationState> {
   }
 
   void watchNotifications(String userId) {
-    _notificationRepository.watchNotifications(userId).listen((notifications) {
-      _notificationRepository.getUnreadCount(userId).then((unreadCount) {
-        emit(NotificationsLoaded(
-          notifications: notifications,
-          unreadCount: unreadCount,
-        ));
-      });
-    }).onError((e) {
-      emit(NotificationError(message: mapExceptionToMessage(e)));
-    });
+    _notificationsSubscription?.cancel();
+    _notificationsSubscription = _notificationRepository
+        .watchNotifications(userId)
+        .listen(
+      (notifications) {
+        _notificationRepository.getUnreadCount(userId).then((unreadCount) {
+          emit(NotificationsLoaded(
+            notifications: notifications,
+            unreadCount: unreadCount,
+          ));
+        });
+      },
+      onError: (e) {
+        emit(NotificationError(message: mapExceptionToMessage(e)));
+      },
+    );
   }
 
   Future<void> markAsRead(String notificationId, String userId) async {

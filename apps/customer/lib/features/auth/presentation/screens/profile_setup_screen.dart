@@ -108,17 +108,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       hintText: 'john@example.com',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (value) {
-                      if (value != null && value.trim().isNotEmpty) {
-                        final emailRegex = RegExp(
-                          r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+',
-                        );
-                        if (!emailRegex.hasMatch(value.trim())) {
-                          return 'Please enter a valid email';
-                        }
-                      }
-                      return null;
-                    },
+                    validator: Validators.email,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   BlocBuilder<AuthCubit, AuthState>(

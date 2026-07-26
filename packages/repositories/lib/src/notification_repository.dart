@@ -85,7 +85,10 @@ class NotificationRepository implements INotificationRepository {
   Future<void> markAllAsRead(String userId) async {
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.notifications,
-      where: [['userId', userId], ['isRead', false]],
+      where: [
+        QueryCondition(field: 'userId', value: userId),
+        QueryCondition(field: 'isRead', value: false),
+      ],
     );
 
     for (final doc in docs.docs) {
@@ -105,7 +108,10 @@ class NotificationRepository implements INotificationRepository {
   Future<int> getUnreadCount(String userId) async {
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.notifications,
-      where: [['userId', userId], ['isRead', false]],
+      where: [
+        QueryCondition(field: 'userId', value: userId),
+        QueryCondition(field: 'isRead', value: false),
+      ],
     );
 
     return docs.docs.length;

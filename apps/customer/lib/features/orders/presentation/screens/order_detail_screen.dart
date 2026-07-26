@@ -32,7 +32,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   String _shortOrderId(String orderId) {
-    return orderId.substring(0, orderId.length.clamp(0, 8));
+    return orderId.length <= 8 ? orderId : orderId.substring(orderId.length - 8);
   }
 
   @override

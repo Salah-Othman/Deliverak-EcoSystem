@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/query_condition.dart';
+
 abstract class IFirestoreService {
   Future<void> setDocument({
     required String collection,
@@ -25,7 +27,7 @@ abstract class IFirestoreService {
 
   Future<QuerySnapshot> getDocuments({
     required String collection,
-    List<List<dynamic>>? where,
+    List<QueryCondition>? where,
     String? orderBy,
     bool descending = false,
     int? limit,
@@ -38,7 +40,7 @@ abstract class IFirestoreService {
 
   Stream<QuerySnapshot> watchDocuments({
     required String collection,
-    List<List<dynamic>>? where,
+    List<QueryCondition>? where,
     String? orderBy,
     bool descending = false,
     int? limit,

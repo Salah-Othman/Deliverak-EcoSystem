@@ -23,7 +23,7 @@ class DriverRepository implements IDriverRepository {
   Future<DriverModel?> getDriverByUserId(String userId) async {
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.drivers,
-      where: [['userId', userId]],
+      where: [QueryCondition(field: 'userId', value: userId)],
     );
 
     if (docs.docs.isEmpty) return null;
@@ -71,7 +71,7 @@ class DriverRepository implements IDriverRepository {
   Future<List<DriverModel>> getAvailableDrivers() async {
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.drivers,
-      where: [['isOnline', true]],
+      where: [QueryCondition(field: 'isOnline', value: true)],
     );
 
     return docs.docs

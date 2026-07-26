@@ -10,6 +10,7 @@ export 'src/models/driver_model.dart';
 export 'src/models/category_model.dart';
 export 'src/models/notification_model.dart';
 export 'src/models/cloudinary_upload_result.dart';
+export 'src/models/query_condition.dart';
 
 export 'src/constants/firestore_paths.dart';
 
