@@ -20,7 +20,7 @@ packages/
   firebase_services/ ← Implements IAuthService, IFirestoreService, INotificationService from core
   cloudinary_service/← Implements IStorageService from core
   repositories/      ← Implements I*Repository interfaces from core
-  providers/         ← Cubits (depend on core interfaces only)
+  providers/         ← Cubits (depend on core interfaces + firebase_auth)
   ui_kit/            ← Design tokens, theme, reusable widgets
 ```
 
@@ -28,13 +28,15 @@ packages/
 
 ```
 core ← firebase_services, cloudinary_service, repositories, providers
-repositories ← core
-providers ← core
+repositories ← core, firebase_auth
+providers ← core, firebase_auth
 ui_kit ← (standalone, only shimmer)
 apps ← all packages
 ```
 
-**Rule:** `core` has zero internal package dependencies. It depends only on Firebase SDKs. All other packages depend on `core` for interfaces/models.
+**Rule:** `core` has zero internal package dependencies. It depends on Firebase SDKs + equatable + intl. All other packages depend on `core` for interfaces/models.
+
+**Gotcha:** `providers` and `repositories` both have a direct `firebase_auth` dependency (not just via `core`). The auth_cubit imports `firebase_auth` directly for `PhoneAuthProvider.credential()`. This is intentional — credential creation is a Firebase-specific concern.
 
 ## Commands
 
@@ -51,23 +53,36 @@ Run from repo root. No CI workflows exist yet.
 
 ## Architecture Conventions
 
-- **SOLID + DIP:** Cubits depend on repository interfaces (`IAuthRepository`), never concrete classes. Repositories depend on service interfaces (`IAuthService`).
+- **SOLID + DIP:** Cubits depend on repository interfaces (`IAuthRepository`), never concrete classes. Repositories depend on service interfaces (`IAuthService`). Exception: auth_cubit imports `firebase_auth` for credential creation.
 - **Barrel files:** Every package exports through a single `lib/<package>.dart` barrel. Import via `package:<package>/<package>.dart`.
-- **Cubit pattern:** State classes extend `Equatable`. States: `Initial`, `Loading`, `Loaded`, `Error` (with `message`, `code`, `isRetryable`).
+- **Cubit pattern:** State classes extend `Equatable`. States: `Initial`, `Loading`, `Authenticated`, `Unauthenticated`, `PhoneSubmitted`, `Error` (with `message`, `code`, `isRetryable`).
 - **Models:** Use `Equatable`, implement `fromMap`/`toMap`/`copyWith`.
 - **Env vars:** Use `String.fromEnvironment` in `lib/config/env.dart` per app (see `apps/customer/lib/config/env.dart`).
 - **Composition root:** `main.dart` creates service instances, wires repository/provider providers via `MultiRepositoryProvider` + `MultiBlocProvider`.
+- **Firebase config:** Uses `firebase_options.dart` with `DefaultFirebaseOptions.currentPlatform`. Values come from `Env` compile-time constants via `--dart-define`.
+
+## Auth Flow (Phone OTP)
+
+1. LoginScreen → enter phone → `verifyPhoneNumber()` → Firebase sends SMS
+2. `PhoneSubmitted` state (holds `verificationId`) → AppRouter shows OtpScreen
+3. OtpScreen → 6-digit input → auto-submits `submitOtp()` → `PhoneAuthProvider.credential()` → `signInWithCredential()`
+4. `authStateChanges` listener → `_loadUser()` from Firestore → `Authenticated` → HomeScreen
+5. Auto-verification on Android handled via `onCompleted` callback
 
 ## Key Files
 
 - `plan.md` — Full architecture spec, Firestore schema, security rules, SOLID examples
 - `packages/core/lib/core.dart` — All exported interfaces and models
 - `apps/customer/lib/main.dart` — Working composition root example
-- `packages/providers/lib/src/auth_cubit.dart` — Reference Cubit implementation
+- `apps/customer/lib/config/env.dart` — Compile-time env vars (Firebase, Cloudinary, Maps)
+- `apps/customer/lib/config/firebase_options.dart` — Firebase config using Env constants
+- `packages/providers/lib/src/auth_cubit.dart` — Reference Cubit with full auth state machine
 
 ## Gotchas
 
 - `driver/` and `vendor/` apps are unmodified Flutter templates — do not reference their code as examples.
 - `core` package depends on `firebase_auth`, `cloud_firestore`, `firebase_messaging` directly (interfaces reference Firebase types like `User`, `PhoneAuthCredential`).
+- `providers` also depends on `firebase_auth` directly (for `PhoneAuthProvider.credential()` in auth_cubit).
 - No `opencode.json`, no CI, no test infrastructure beyond default `flutter_test`.
 - Analysis uses `flutter_lints` (not `very_good_analysis` or custom rules).
+- `.gitignore` already covers `google-services.json` and `GoogleService-Info.plist`.

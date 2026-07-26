@@ -25,12 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement phone verification
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone verification not implemented yet'),
-        ),
-      );
+      final phone = _phoneController.text.trim();
+      context.read<AuthCubit>().verifyPhoneNumber(phone);
     }
   }
 
@@ -77,6 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.phone),
                   ),
                   validator: Validators.phone,
+                  onFieldSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 BlocBuilder<AuthCubit, AuthState>(

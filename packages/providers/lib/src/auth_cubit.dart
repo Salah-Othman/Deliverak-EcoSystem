@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:core/core.dart';
@@ -25,6 +26,21 @@ class Authenticated extends AuthState {
 
 class Unauthenticated extends AuthState {}
 
+class PhoneSubmitted extends AuthState {
+  final String verificationId;
+  final String phoneNumber;
+  final int? resendToken;
+
+  const PhoneSubmitted({
+    required this.verificationId,
+    required this.phoneNumber,
+    this.resendToken,
+  });
+
+  @override
+  List<Object?> get props => [verificationId, phoneNumber, resendToken];
+}
+
 class AuthError extends AuthState {
   final String message;
   final String? code;
@@ -47,15 +63,37 @@ class AuthCubit extends Cubit<AuthState> {
       : _authRepository = authRepository,
         super(AuthInitial());
 
-  Future<void> checkAuthStatus() async {
-    emit(AuthLoading());
-    try {
-      final user = await _authRepository.getCurrentUser();
+  void initAuthListener() {
+    _authRepository.authStateChanges.listen((user) {
       if (user != null) {
-        emit(Authenticated(user));
-      } else {
+        _loadUser(user.uid);
+      } else if (state is! PhoneSubmitted) {
         emit(Unauthenticated());
       }
+    });
+  }
+
+  Future<void> verifyPhoneNumber(String phoneNumber) async {
+    emit(AuthLoading());
+    try {
+      await _authRepository.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        onCompleted: _onVerificationCompleted,
+        onFailed: _onVerificationFailed,
+        onCodeSent: (verificationId, resendToken) {
+          emit(PhoneSubmitted(
+            verificationId: verificationId,
+            phoneNumber: phoneNumber,
+            resendToken: resendToken,
+          ));
+        },
+        onCodeTimeout: (verificationId) {
+          emit(const AuthError(
+            message: 'Verification code timed out. Please try again.',
+            isRetryable: true,
+          ));
+        },
+      );
     } catch (e) {
       emit(AuthError(
         message: mapExceptionToMessage(e),
@@ -65,14 +103,48 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  void initAuthListener() {
-    _authRepository.authStateChanges.listen((user) {
-      if (user != null) {
-        _loadUser(user.uid);
-      } else {
-        emit(Unauthenticated());
-      }
-    });
+  void _onVerificationCompleted(PhoneAuthCredential credential) {
+    _submitCredential(credential);
+  }
+
+  void _onVerificationFailed(FirebaseAuthException error) {
+    emit(AuthError(
+      message: _mapAuthError(error),
+      code: error.code,
+      isRetryable: _isRetryableAuthError(error),
+    ));
+  }
+
+  Future<void> submitOtp(String otp) async {
+    final currentState = state;
+    if (currentState is! PhoneSubmitted) return;
+
+    final credential = PhoneAuthProvider.credential(
+      verificationId: currentState.verificationId,
+      smsCode: otp,
+    );
+
+    await _submitCredential(credential);
+  }
+
+  Future<void> resendOtp() async {
+    final currentState = state;
+    if (currentState is! PhoneSubmitted) return;
+
+    await verifyPhoneNumber(currentState.phoneNumber);
+  }
+
+  Future<void> _submitCredential(PhoneAuthCredential credential) async {
+    emit(AuthLoading());
+    try {
+      await _authRepository.signInWithCredential(credential);
+    } catch (e) {
+      emit(AuthError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: e is AppException ? e.isRetryable : false,
+      ));
+    }
   }
 
   Future<void> _loadUser(String uid) async {
@@ -115,6 +187,37 @@ class AuthCubit extends Cubit<AuthState> {
       emit(Unauthenticated());
     } catch (e) {
       emit(AuthError(message: mapExceptionToMessage(e)));
+    }
+  }
+
+  String _mapAuthError(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-phone-number':
+        return 'The phone number is invalid.';
+      case 'invalid-verification-code':
+        return 'The OTP code is invalid. Please try again.';
+      case 'invalid-verification-id':
+        return 'Verification session expired. Please request a new code.';
+      case 'session-expired':
+        return 'Verification session expired. Please request a new code.';
+      case 'too-many-requests':
+        return 'Too many requests. Please try again later.';
+      case 'quota-exceeded':
+        return 'SMS quota exceeded. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Check your network.';
+      default:
+        return error.message ?? 'Something went wrong. Please try again.';
+    }
+  }
+
+  bool _isRetryableAuthError(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'network-request-failed':
+      case 'too-many-requests':
+        return true;
+      default:
+        return false;
     }
   }
 }
