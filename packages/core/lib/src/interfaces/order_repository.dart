@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/src/models/order_model.dart';
+import 'package:core/src/models/paginated_result.dart';
 import 'package:core/src/enums/order_status.dart';
 
 abstract class IOrderRepository {
@@ -16,6 +18,15 @@ abstract class IOrderRepository {
     String? vendorId,
     String? driverId,
     OrderStatus? status,
+  });
+
+  Future<PaginatedResult<OrderModel>> getOrdersPaginated({
+    String? customerId,
+    String? vendorId,
+    String? driverId,
+    OrderStatus? status,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
   });
 
   Future<OrderModel?> getOrder(String orderId);

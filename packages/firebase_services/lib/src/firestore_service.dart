@@ -150,4 +150,58 @@ class FirestoreService implements IFirestoreService {
 
     return await query.get();
   }
+
+  @override
+  Future<QuerySnapshot> getDocumentsFilteredPaginated({
+    required String collection,
+    List<QueryCondition>? where,
+    String? orderBy,
+    bool descending = false,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+  }) async {
+    Query query = _firestore.collection(collection);
+
+    if (where != null) {
+      for (final condition in where) {
+        switch (condition.operator) {
+          case QueryOperator.isEqualTo:
+            query = query.where(condition.field, isEqualTo: condition.value);
+          case QueryOperator.isNotEqualTo:
+            query = query.where(condition.field, isNotEqualTo: condition.value);
+          case QueryOperator.isLessThan:
+            query = query.where(condition.field, isLessThan: condition.value);
+          case QueryOperator.isLessThanOrEqualTo:
+            query = query.where(
+              condition.field,
+              isLessThanOrEqualTo: condition.value,
+            );
+          case QueryOperator.isGreaterThan:
+            query = query.where(condition.field, isGreaterThan: condition.value);
+          case QueryOperator.isGreaterThanOrEqualTo:
+            query = query.where(
+              condition.field,
+              isGreaterThanOrEqualTo: condition.value,
+            );
+          case QueryOperator.arrayContains:
+            query = query.where(
+              condition.field,
+              arrayContains: condition.value,
+            );
+        }
+      }
+    }
+
+    if (orderBy != null) {
+      query = query.orderBy(orderBy, descending: descending);
+    }
+
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+
+    query = query.limit(limit);
+
+    return await query.get();
+  }
 }

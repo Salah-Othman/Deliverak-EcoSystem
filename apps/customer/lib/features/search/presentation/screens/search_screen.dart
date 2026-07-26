@@ -156,15 +156,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     borderRadius: AppRadius.borderRadiusSm,
                   ),
                   child: vendor.image.isNotEmpty
-                      ? ClipRRect(
+                      ? CachedImage(
+                          url: vendor.image,
+                          width: 60,
+                          height: 60,
                           borderRadius: AppRadius.borderRadiusSm,
-                          child: Image.network(
-                            vendor.image,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.store,
-                              color: AppColors.grey500,
-                            ),
+                          errorWidget: const Icon(
+                            Icons.store,
+                            color: AppColors.grey500,
                           ),
                         )
                       : const Icon(

@@ -53,4 +53,13 @@ abstract class IFirestoreService {
     bool descending = false,
     int limit = 20,
   });
+
+  Future<QuerySnapshot> getDocumentsFilteredPaginated({
+    required String collection,
+    List<QueryCondition>? where,
+    String? orderBy,
+    bool descending = false,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+  });
 }

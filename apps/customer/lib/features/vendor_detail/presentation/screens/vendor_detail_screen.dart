@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -112,10 +113,10 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         background: widget.vendor.image.isNotEmpty
-            ? Image.network(
-                widget.vendor.image,
+            ? CachedNetworkImage(
+                imageUrl: widget.vendor.image,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
+                errorWidget: (_, _, _) => Container(
                   color: AppColors.grey200,
                   child: const Icon(
                     Icons.store,

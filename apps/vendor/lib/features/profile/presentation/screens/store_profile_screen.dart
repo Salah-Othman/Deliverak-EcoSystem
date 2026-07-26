@@ -254,10 +254,11 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
               ),
               child: vendor.image.isNotEmpty
                   ? ClipOval(
-                      child: Image.network(
-                        vendor.image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Icon(
+                      child: CachedImage(
+                        url: vendor.image,
+                        width: 120,
+                        height: 120,
+                        errorWidget: const Icon(
                           Icons.store,
                           size: 50,
                           color: AppColors.grey500,

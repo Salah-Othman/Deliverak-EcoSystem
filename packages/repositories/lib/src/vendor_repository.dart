@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 
 const _kVendorsBox = 'vendors_box';
@@ -58,6 +59,41 @@ class VendorRepository implements IVendorRepository {
     );
 
     return vendors;
+  }
+
+  @override
+  Future<PaginatedResult<VendorModel>> getVendorsPaginated({
+    DeliveryType? category,
+    bool? isOpen,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+  }) async {
+    final conditions = <QueryCondition>[];
+    if (category != null) {
+      conditions.add(QueryCondition(field: 'category', value: category.name));
+    }
+    if (isOpen != null) {
+      conditions.add(QueryCondition(field: 'isOpen', value: isOpen));
+    }
+
+    final snapshot = await _firestoreService.getDocumentsFilteredPaginated(
+      collection: FirestorePaths.vendors,
+      where: conditions.isNotEmpty ? conditions : null,
+      orderBy: 'rating',
+      descending: true,
+      lastDocument: lastDocument,
+      limit: limit,
+    );
+
+    final vendors = snapshot.docs
+        .map((doc) => VendorModel.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    return PaginatedResult<VendorModel>(
+      items: vendors,
+      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      hasMore: snapshot.docs.length == limit,
+    );
   }
 
   @override

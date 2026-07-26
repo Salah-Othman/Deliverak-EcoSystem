@@ -311,15 +311,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       borderRadius: AppRadius.borderRadiusSm,
                       color: AppColors.grey200,
                     ),
-                    child: ClipRRect(
+                    child: CachedImage(
+                      url: entry.value,
+                      width: 80,
+                      height: 80,
                       borderRadius: AppRadius.borderRadiusSm,
-                      child: Image.network(
-                        entry.value,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Icon(
-                          Icons.image,
-                          color: AppColors.grey500,
-                        ),
+                      errorWidget: const Icon(
+                        Icons.image,
+                        color: AppColors.grey500,
                       ),
                     ),
                   ),

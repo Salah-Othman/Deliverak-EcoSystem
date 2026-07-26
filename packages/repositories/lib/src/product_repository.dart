@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 
 const _kProductsBox = 'products_box';
@@ -56,6 +57,44 @@ class ProductRepository implements IProductRepository {
     );
 
     return products;
+  }
+
+  @override
+  Future<PaginatedResult<ProductModel>> getProductsPaginated({
+    required String vendorId,
+    String? category,
+    bool? isAvailable,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+  }) async {
+    final conditions = <QueryCondition>[
+      QueryCondition(field: 'vendorId', value: vendorId),
+    ];
+    if (category != null) {
+      conditions.add(QueryCondition(field: 'category', value: category));
+    }
+    if (isAvailable != null) {
+      conditions.add(QueryCondition(field: 'isAvailable', value: isAvailable));
+    }
+
+    final snapshot = await _firestoreService.getDocumentsFilteredPaginated(
+      collection: FirestorePaths.products,
+      where: conditions,
+      orderBy: 'createdAt',
+      descending: true,
+      lastDocument: lastDocument,
+      limit: limit,
+    );
+
+    final products = snapshot.docs
+        .map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    return PaginatedResult<ProductModel>(
+      items: products,
+      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      hasMore: snapshot.docs.length == limit,
+    );
   }
 
   @override

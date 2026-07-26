@@ -29,15 +29,14 @@ class ProductItemCard extends StatelessWidget {
               borderRadius: AppRadius.borderRadiusSm,
             ),
             child: product.images.isNotEmpty
-                ? ClipRRect(
+                ? CachedImage(
+                    url: product.images.first,
+                    width: 64,
+                    height: 64,
                     borderRadius: AppRadius.borderRadiusSm,
-                    child: Image.network(
-                      product.images.first,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.restaurant,
-                        color: AppColors.grey500,
-                      ),
+                    errorWidget: const Icon(
+                      Icons.restaurant,
+                      color: AppColors.grey500,
                     ),
                   )
                 : const Icon(

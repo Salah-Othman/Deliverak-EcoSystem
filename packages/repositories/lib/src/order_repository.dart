@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 
 const _kOrdersBox = 'orders_box';
@@ -136,6 +137,49 @@ class OrderRepository implements IOrderRepository {
     );
 
     return orders;
+  }
+
+  @override
+  Future<PaginatedResult<OrderModel>> getOrdersPaginated({
+    String? customerId,
+    String? vendorId,
+    String? driverId,
+    OrderStatus? status,
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+  }) async {
+    final conditions = <QueryCondition>[];
+    if (customerId != null) {
+      conditions.add(QueryCondition(field: 'customerId', value: customerId));
+    }
+    if (vendorId != null) {
+      conditions.add(QueryCondition(field: 'vendorId', value: vendorId));
+    }
+    if (driverId != null) {
+      conditions.add(QueryCondition(field: 'driverId', value: driverId));
+    }
+    if (status != null) {
+      conditions.add(QueryCondition(field: 'status', value: status.name));
+    }
+
+    final snapshot = await _firestoreService.getDocumentsFilteredPaginated(
+      collection: FirestorePaths.orders,
+      where: conditions.isNotEmpty ? conditions : null,
+      orderBy: 'createdAt',
+      descending: true,
+      lastDocument: lastDocument,
+      limit: limit,
+    );
+
+    final orders = snapshot.docs
+        .map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    return PaginatedResult<OrderModel>(
+      items: orders,
+      lastDocument: snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      hasMore: snapshot.docs.length == limit,
+    );
   }
 
   @override

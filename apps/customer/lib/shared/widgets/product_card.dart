@@ -113,15 +113,14 @@ class ProductCard extends StatelessWidget {
         borderRadius: AppRadius.borderRadiusSm,
       ),
       child: product.images.isNotEmpty
-          ? ClipRRect(
+          ? CachedImage(
+              url: product.images.first,
+              width: 80,
+              height: 80,
               borderRadius: AppRadius.borderRadiusSm,
-              child: Image.network(
-                product.images.first,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Icon(
-                  Icons.fastfood_outlined,
-                  color: isUnavailable ? AppColors.grey400 : AppColors.grey500,
-                ),
+              errorWidget: Icon(
+                Icons.fastfood_outlined,
+                color: isUnavailable ? AppColors.grey400 : AppColors.grey500,
               ),
             )
           : Icon(

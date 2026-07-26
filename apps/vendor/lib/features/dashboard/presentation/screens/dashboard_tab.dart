@@ -93,10 +93,11 @@ class DashboardTab extends StatelessWidget {
           ),
           child: vendor != null && vendor.image.isNotEmpty
               ? ClipOval(
-                  child: Image.network(
-                    vendor.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(
+                  child: CachedImage(
+                    url: vendor.image,
+                    width: 56,
+                    height: 56,
+                    errorWidget: const Icon(
                       Icons.store,
                       color: AppColors.grey500,
                     ),

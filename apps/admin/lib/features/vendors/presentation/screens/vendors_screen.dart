@@ -139,15 +139,14 @@ class _VendorsScreenState extends State<VendorsScreen> {
                       borderRadius: AppRadius.borderRadiusSm,
                     ),
                     child: vendor.image.isNotEmpty
-                        ? ClipRRect(
+                        ? CachedImage(
+                            url: vendor.image,
+                            width: 48,
+                            height: 48,
                             borderRadius: AppRadius.borderRadiusSm,
-                            child: Image.network(
-                              vendor.image,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(
-                                Icons.store,
-                                color: AppColors.grey500,
-                              ),
+                            errorWidget: const Icon(
+                              Icons.store,
+                              color: AppColors.grey500,
                             ),
                           )
                         : const Icon(
@@ -203,12 +202,12 @@ class _VendorsScreenState extends State<VendorsScreen> {
               if (vendor.image.isNotEmpty)
                 ClipRRect(
                   borderRadius: AppRadius.borderRadiusMd,
-                  child: Image.network(
-                    vendor.image,
+                  child: CachedImage(
+                    url: vendor.image,
                     height: 150,
                     width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
+                    borderRadius: AppRadius.borderRadiusMd,
+                    errorWidget: Container(
                       height: 150,
                       color: AppColors.grey200,
                       child: const Icon(Icons.store, size: 48),
