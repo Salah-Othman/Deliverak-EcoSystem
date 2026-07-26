@@ -14,6 +14,19 @@ class DriverRepository implements IDriverRepository {
     required String vehicleNumber,
     required String licenseNumber,
   }) async {
+    if (userId.trim().isEmpty) {
+      throw const ValidationException(message: 'User ID is required');
+    }
+    if (vehicleType.trim().isEmpty) {
+      throw const ValidationException(message: 'Vehicle type is required');
+    }
+    if (vehicleNumber.trim().isEmpty || vehicleNumber.trim().length > 20) {
+      throw const ValidationException(message: 'Vehicle number must be 1–20 characters');
+    }
+    if (licenseNumber.trim().isEmpty || licenseNumber.trim().length > 30) {
+      throw const ValidationException(message: 'License number must be 1–30 characters');
+    }
+
     final now = DateTime.now();
     final driverId = '${now.millisecondsSinceEpoch}_$userId';
 
@@ -107,6 +120,13 @@ class DriverRepository implements IDriverRepository {
     String? vehicleNumber,
     String? licenseNumber,
   }) async {
+    if (vehicleNumber != null && (vehicleNumber.trim().isEmpty || vehicleNumber.trim().length > 20)) {
+      throw const ValidationException(message: 'Vehicle number must be 1–20 characters');
+    }
+    if (licenseNumber != null && (licenseNumber.trim().isEmpty || licenseNumber.trim().length > 30)) {
+      throw const ValidationException(message: 'License number must be 1–30 characters');
+    }
+
     final updates = <String, dynamic>{};
 
     if (vehicleType != null) updates['vehicleType'] = vehicleType;

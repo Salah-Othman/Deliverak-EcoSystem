@@ -9,6 +9,7 @@ import '../../../vendor_detail/presentation/screens/vendor_detail_screen.dart';
 import '../../../search/presentation/screens/search_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../orders/presentation/screens/order_history_screen.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,51 +26,64 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     context.read<VendorCubit>().loadVendors();
+    _loadNotifications();
+  }
+
+  void _loadNotifications() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      context.read<NotificationCubit>()
+        ..loadNotifications(authState.user.uid)
+        ..watchNotifications(authState.user.uid);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveScaffold(
-      currentIndex: _currentIndex,
-      onTap: (index) {
-        setState(() => _currentIndex = index);
-      },
-      items: const [
-        NavigationItem(
-          icon: Icons.home_outlined,
-          activeIcon: Icons.home,
-          label: 'Home',
-        ),
-        NavigationItem(
-          icon: Icons.search_outlined,
-          activeIcon: Icons.search,
-          label: 'Search',
-        ),
-        NavigationItem(
-          icon: Icons.shopping_cart_outlined,
-          activeIcon: Icons.shopping_cart,
-          label: 'Cart',
-        ),
-        NavigationItem(
-          icon: Icons.receipt_long_outlined,
-          activeIcon: Icons.receipt_long,
-          label: 'Orders',
-        ),
-        NavigationItem(
-          icon: Icons.person_outline,
-          activeIcon: Icons.person,
-          label: 'Profile',
-        ),
-      ],
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildHomeTab(),
-          const SearchScreen(),
-          const CartScreen(),
-          const OrderHistoryScreen(),
-          const Center(child: Text('Profile')),
+    return Scaffold(
+      appBar: _currentIndex == 0 ? _buildHomeAppBar() : null,
+      body: AdaptiveScaffold(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: const [
+          NavigationItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'Home',
+          ),
+          NavigationItem(
+            icon: Icons.search_outlined,
+            activeIcon: Icons.search,
+            label: 'Search',
+          ),
+          NavigationItem(
+            icon: Icons.shopping_cart_outlined,
+            activeIcon: Icons.shopping_cart,
+            label: 'Cart',
+          ),
+          NavigationItem(
+            icon: Icons.receipt_long_outlined,
+            activeIcon: Icons.receipt_long,
+            label: 'Orders',
+          ),
+          NavigationItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: 'Profile',
+          ),
         ],
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildHomeTab(),
+            const SearchScreen(),
+            const CartScreen(),
+            const OrderHistoryScreen(),
+            const Center(child: Text('Profile')),
+          ],
+        ),
       ),
     );
   }
@@ -79,6 +93,61 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildCategoryChips(),
         Expanded(child: _buildVendorList()),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildHomeAppBar() {
+    return AppBar(
+      title: const Text('Deliverak'),
+      actions: [
+        BlocBuilder<NotificationCubit, NotificationState>(
+          builder: (context, state) {
+            final unreadCount =
+                state is NotificationsLoaded ? state.unreadCount : 0;
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    );
+                  },
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        style: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

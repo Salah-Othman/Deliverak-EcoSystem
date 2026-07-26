@@ -23,6 +23,44 @@ class OrderRepository implements IOrderRepository {
     required double deliveryFee,
     required DeliveryAddress deliveryAddress,
   }) async {
+    if (customerId.trim().isEmpty) {
+      throw const ValidationException(message: 'Customer ID is required');
+    }
+    if (vendorId.trim().isEmpty) {
+      throw const ValidationException(message: 'Vendor ID is required');
+    }
+    if (items.isEmpty) {
+      throw const ValidationException(message: 'Order must contain at least one item');
+    }
+    for (final item in items) {
+      if (item.quantity < 1 || item.quantity > 99) {
+        throw const ValidationException(message: 'Item quantity must be between 1 and 99');
+      }
+      if (item.price < 0) {
+        throw const ValidationException(message: 'Item price cannot be negative');
+      }
+    }
+    final itemsTotal = items.fold<double>(0, (sum, item) => sum + item.price * item.quantity);
+    final expectedTotal = itemsTotal + deliveryFee;
+    if ((totalAmount - expectedTotal).abs() > 0.01) {
+      throw const ValidationException(message: 'Order total does not match items total plus delivery fee');
+    }
+    if (totalAmount < 0) {
+      throw const ValidationException(message: 'Total amount cannot be negative');
+    }
+    if (deliveryFee < 0) {
+      throw const ValidationException(message: 'Delivery fee cannot be negative');
+    }
+    if (deliveryAddress.address.trim().isEmpty) {
+      throw const ValidationException(message: 'Delivery address is required');
+    }
+    if (deliveryAddress.name.trim().isEmpty) {
+      throw const ValidationException(message: 'Recipient name is required');
+    }
+    if (deliveryAddress.phone.trim().isEmpty) {
+      throw const ValidationException(message: 'Recipient phone is required');
+    }
+
     final now = DateTime.now();
     final orderDocId =
         '${now.millisecondsSinceEpoch}_${customerId.hashCode}';

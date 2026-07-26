@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../enums/delivery_type.dart';
+import '../exceptions/app_exception.dart';
 
 class CategoryModel extends Equatable {
   final String categoryId;
@@ -42,4 +43,16 @@ class CategoryModel extends Equatable {
 
   @override
   List<Object?> get props => [categoryId, name, image, type, sortOrder];
+
+  void validate() {
+    if (categoryId.trim().isEmpty) {
+      throw const ValidationException(message: 'Category ID is required');
+    }
+    if (name.trim().isEmpty || name.trim().length > 50) {
+      throw const ValidationException(message: 'Category name must be 1–50 characters');
+    }
+    if (image.trim().isEmpty) {
+      throw const ValidationException(message: 'Category image is required');
+    }
+  }
 }

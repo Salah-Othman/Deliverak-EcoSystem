@@ -11,7 +11,7 @@ class LocalNotificationService implements ILocalNotificationService {
   final StreamController<int> _tapController =
       StreamController<int>.broadcast();
   final StreamController<String?> _payloadController =
-      Stream<String?>.broadcast();
+      StreamController<String?>.broadcast();
 
   @override
   Future<void> initialize({

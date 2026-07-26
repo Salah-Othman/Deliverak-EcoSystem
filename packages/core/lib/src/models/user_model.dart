@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../enums/user_role.dart';
+import '../exceptions/app_exception.dart';
 
 class UserModel extends Equatable {
   final String uid;
@@ -79,4 +80,19 @@ class UserModel extends Equatable {
 
   @override
   List<Object?> get props => [uid, name, email, phone, role, fcmToken, profileImage, createdAt, updatedAt];
+
+  void validate() {
+    if (uid.trim().isEmpty) {
+      throw const ValidationException(message: 'User ID is required');
+    }
+    if (name.trim().isEmpty || name.trim().length > 50) {
+      throw const ValidationException(message: 'Name must be 1–50 characters');
+    }
+    if (phone.trim().isEmpty || !RegExp(r'^\+[1-9]\d{6,14}$').hasMatch(phone.trim())) {
+      throw const ValidationException(message: 'Enter a valid phone number with country code');
+    }
+    if (email.trim().isNotEmpty && !RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
+      throw const ValidationException(message: 'Enter a valid email address');
+    }
+  }
 }

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../exceptions/app_exception.dart';
+
 class NotificationModel extends Equatable {
   final String notificationId;
   final String userId;
@@ -64,4 +66,19 @@ class NotificationModel extends Equatable {
 
   @override
   List<Object?> get props => [notificationId, userId, title, body, type, referenceId, isRead, createdAt];
+
+  void validate() {
+    if (notificationId.trim().isEmpty) {
+      throw const ValidationException(message: 'Notification ID is required');
+    }
+    if (userId.trim().isEmpty) {
+      throw const ValidationException(message: 'User ID is required');
+    }
+    if (title.trim().isEmpty || title.trim().length > 100) {
+      throw const ValidationException(message: 'Notification title must be 1–100 characters');
+    }
+    if (body.trim().isEmpty || body.trim().length > 500) {
+      throw const ValidationException(message: 'Notification body must be 1–500 characters');
+    }
+  }
 }

@@ -95,6 +95,7 @@ class AuthRepository implements IAuthRepository {
     );
 
     await saveCachedUser(newUser);
+    startFcmTokenListener(newUser.uid);
     return newUser;
   }
 
@@ -121,6 +122,7 @@ class AuthRepository implements IAuthRepository {
     if (doc.exists) {
       final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
       await saveCachedUser(userModel);
+      startFcmTokenListener(userModel.uid);
       return userModel;
     }
 
@@ -142,6 +144,7 @@ class AuthRepository implements IAuthRepository {
     );
 
     await saveCachedUser(newUser);
+    startFcmTokenListener(newUser.uid);
     return newUser;
   }
 
@@ -183,6 +186,7 @@ class AuthRepository implements IAuthRepository {
     );
 
     await saveCachedUser(newUser);
+    startFcmTokenListener(newUser.uid);
     return newUser;
   }
 
@@ -190,6 +194,8 @@ class AuthRepository implements IAuthRepository {
   Future<UserModel?> getCurrentUser() async {
     final user = _authService.currentUser;
     if (user == null) return null;
+
+    startFcmTokenListener(user.uid);
 
     final cached = await getCachedUser();
     if (cached != null && cached.uid == user.uid) {
@@ -215,6 +221,14 @@ class AuthRepository implements IAuthRepository {
     String? email,
     String? profileImage,
   }) async {
+    if (name != null && (name.trim().isEmpty || name.trim().length > 50)) {
+      throw const ValidationException(message: 'Name must be 1–50 characters');
+    }
+    if (email != null && email.trim().isNotEmpty &&
+        !RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
+      throw const ValidationException(message: 'Enter a valid email address');
+    }
+
     final updates = <String, dynamic>{
       'updatedAt': DateTime.now().toIso8601String(),
     };
@@ -247,6 +261,14 @@ class AuthRepository implements IAuthRepository {
     String? email,
     String? profileImage,
   }) async {
+    if (name.trim().isEmpty || name.trim().length > 50) {
+      throw const ValidationException(message: 'Name must be 1–50 characters');
+    }
+    if (email != null && email.trim().isNotEmpty &&
+        !RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
+      throw const ValidationException(message: 'Enter a valid email address');
+    }
+
     final existing = await getCachedUser();
 
     final updates = <String, dynamic>{
@@ -329,9 +351,10 @@ class AuthRepository implements IAuthRepository {
   }
 
   Future<void> _saveFcmToken(String uid) async {
-    if (_notificationService == null) return;
+    final service = _notificationService;
+    if (service == null) return;
     try {
-      final token = await _notificationService!.getToken();
+      final token = await service.getToken();
       if (token != null) {
         await _updateFcmToken(uid, token);
       }

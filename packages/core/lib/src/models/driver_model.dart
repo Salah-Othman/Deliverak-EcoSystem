@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../exceptions/app_exception.dart';
+
 class DriverModel extends Equatable {
   final String driverId;
   final String userId;
@@ -86,4 +88,22 @@ class DriverModel extends Equatable {
 
   @override
   List<Object?> get props => [driverId, userId, vehicleType, vehicleNumber, licenseNumber, isOnline, currentLat, currentLng, rating, totalDeliveries, createdAt];
+
+  void validate() {
+    if (driverId.trim().isEmpty) {
+      throw const ValidationException(message: 'Driver ID is required');
+    }
+    if (userId.trim().isEmpty) {
+      throw const ValidationException(message: 'User ID is required');
+    }
+    if (vehicleType.trim().isEmpty) {
+      throw const ValidationException(message: 'Vehicle type is required');
+    }
+    if (vehicleNumber.trim().isEmpty || vehicleNumber.trim().length > 20) {
+      throw const ValidationException(message: 'Vehicle number must be 1–20 characters');
+    }
+    if (licenseNumber.trim().isEmpty || licenseNumber.trim().length > 30) {
+      throw const ValidationException(message: 'License number must be 1–30 characters');
+    }
+  }
 }

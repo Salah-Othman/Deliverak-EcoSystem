@@ -84,6 +84,7 @@ class ProductRepository implements IProductRepository {
 
   @override
   Future<void> createProduct(ProductModel product) async {
+    product.validate();
     await _firestoreService.setDocument(
       collection: FirestorePaths.products,
       documentId: product.productId,
@@ -94,6 +95,7 @@ class ProductRepository implements IProductRepository {
 
   @override
   Future<void> updateProduct(ProductModel product) async {
+    product.validate();
     await _firestoreService.updateDocument(
       collection: FirestorePaths.products,
       documentId: product.productId,

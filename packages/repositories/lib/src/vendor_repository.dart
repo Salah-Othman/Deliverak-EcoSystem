@@ -118,6 +118,7 @@ class VendorRepository implements IVendorRepository {
 
   @override
   Future<void> updateVendor(VendorModel vendor) async {
+    vendor.validate();
     await _firestoreService.updateDocument(
       collection: FirestorePaths.vendors,
       documentId: vendor.vendorId,

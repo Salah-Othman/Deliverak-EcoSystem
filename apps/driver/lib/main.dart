@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:core/core.dart';
 import 'package:firebase_services/firebase_services.dart';
@@ -27,9 +30,16 @@ void main() async {
   final INotificationService fcmService = FCMService();
   final ISecureStorageService secureStorage = SecureStorageService();
   final ICacheService cacheService = HiveCacheService();
+  final ILocalNotificationService localNotificationService =
+      LocalNotificationService();
 
   await cacheService.init();
   await fcmService.requestPermission();
+  await localNotificationService.initialize(
+    androidChannelId: 'deliverak_driver',
+    androidChannelName: 'Driver Notifications',
+    androidChannelDescription: 'Order and delivery notifications',
+  );
 
   runApp(
     DriverApp(
@@ -38,16 +48,18 @@ void main() async {
       fcmService: fcmService,
       secureStorage: secureStorage,
       cacheService: cacheService,
+      localNotificationService: localNotificationService,
     ),
   );
 }
 
-class DriverApp extends StatelessWidget {
+class DriverApp extends StatefulWidget {
   final IAuthService authService;
   final IFirestoreService firestoreService;
   final INotificationService fcmService;
   final ISecureStorageService secureStorage;
   final ICacheService cacheService;
+  final ILocalNotificationService localNotificationService;
 
   const DriverApp({
     super.key,
@@ -56,34 +68,71 @@ class DriverApp extends StatelessWidget {
     required this.fcmService,
     required this.secureStorage,
     required this.cacheService,
+    required this.localNotificationService,
   });
+
+  @override
+  State<DriverApp> createState() => _DriverAppState();
+}
+
+class _DriverAppState extends State<DriverApp> {
+  StreamSubscription<RemoteMessage>? _foregroundSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupForegroundListener();
+  }
+
+  void _setupForegroundListener() {
+    _foregroundSubscription =
+        widget.fcmService.onMessage.listen((message) {
+      final notification = message.notification;
+      if (notification == null) return;
+
+      widget.localNotificationService.showLocalNotification(
+        id: message.hashCode,
+        title: notification.title ?? '',
+        body: notification.body ?? '',
+        payload: message.data['referenceId'],
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _foregroundSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<IAuthService>.value(value: authService),
-        RepositoryProvider<IFirestoreService>.value(value: firestoreService),
-        RepositoryProvider<INotificationService>.value(value: fcmService),
-        RepositoryProvider<ISecureStorageService>.value(value: secureStorage),
-        RepositoryProvider<ICacheService>.value(value: cacheService),
+        RepositoryProvider<IAuthService>.value(value: widget.authService),
+        RepositoryProvider<IFirestoreService>.value(value: widget.firestoreService),
+        RepositoryProvider<INotificationService>.value(value: widget.fcmService),
+        RepositoryProvider<ISecureStorageService>.value(value: widget.secureStorage),
+        RepositoryProvider<ICacheService>.value(value: widget.cacheService),
+        RepositoryProvider<ILocalNotificationService>.value(value: widget.localNotificationService),
         RepositoryProvider<IAuthRepository>(
           create: (_) => AuthRepository(
-            authService: authService,
-            firestoreService: firestoreService,
-            secureStorage: secureStorage,
-            cacheService: cacheService,
+            authService: widget.authService,
+            firestoreService: widget.firestoreService,
+            secureStorage: widget.secureStorage,
+            cacheService: widget.cacheService,
+            notificationService: widget.fcmService,
           ),
         ),
         RepositoryProvider<IDriverRepository>(
           create: (_) => DriverRepository(
-            firestoreService: firestoreService,
+            firestoreService: widget.firestoreService,
           ),
         ),
         RepositoryProvider<IOrderRepository>(
           create: (_) => OrderRepository(
-            firestoreService: firestoreService,
-            cacheService: cacheService,
+            firestoreService: widget.firestoreService,
+            cacheService: widget.cacheService,
           ),
         ),
       ],

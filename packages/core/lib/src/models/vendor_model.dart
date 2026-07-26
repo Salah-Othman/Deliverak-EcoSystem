@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../enums/delivery_type.dart';
+import '../exceptions/app_exception.dart';
 
 class VendorModel extends Equatable {
   final String vendorId;
@@ -103,4 +104,31 @@ class VendorModel extends Equatable {
 
   @override
   List<Object?> get props => [vendorId, name, description, image, category, lat, lng, address, rating, totalOrders, isOpen, ownerId, createdAt];
+
+  void validate() {
+    if (vendorId.trim().isEmpty) {
+      throw const ValidationException(message: 'Vendor ID is required');
+    }
+    if (name.trim().isEmpty || name.trim().length > 100) {
+      throw const ValidationException(message: 'Vendor name must be 1–100 characters');
+    }
+    if (description.trim().length > 1000) {
+      throw const ValidationException(message: 'Description must be 1000 characters or less');
+    }
+    if (image.trim().isEmpty) {
+      throw const ValidationException(message: 'Vendor image is required');
+    }
+    if (lat < -90 || lat > 90) {
+      throw const ValidationException(message: 'Latitude must be between -90 and 90');
+    }
+    if (lng < -180 || lng > 180) {
+      throw const ValidationException(message: 'Longitude must be between -180 and 180');
+    }
+    if (address.trim().isEmpty || address.trim().length > 200) {
+      throw const ValidationException(message: 'Address must be 1–200 characters');
+    }
+    if (ownerId.trim().isEmpty) {
+      throw const ValidationException(message: 'Owner ID is required');
+    }
+  }
 }
