@@ -6,6 +6,8 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../../shared/widgets/admin_widgets.dart';
+
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
 
@@ -160,7 +162,7 @@ class _UsersScreenState extends State<UsersScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _RoleChip(role: user.role),
+                      UserRoleChip(role: user.role),
                       const SizedBox(width: AppSpacing.sm),
                       IconButton(
                         icon: const Icon(Icons.info_outline, size: 20),
@@ -190,17 +192,17 @@ class _UsersScreenState extends State<UsersScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _detailRow('UID', user.uid),
-              _detailRow('Email', user.email.isNotEmpty ? user.email : 'N/A'),
-              _detailRow('Phone', user.phone.isNotEmpty ? user.phone : 'N/A'),
-              _detailRow('Role', user.role.displayName),
-              _detailRow(
-                'Created',
-                DateFormat.yMMMd().add_jm().format(user.createdAt),
+              DetailRow(label: 'UID', value: user.uid),
+              DetailRow(label: 'Email', value: user.email.isNotEmpty ? user.email : 'N/A'),
+              DetailRow(label: 'Phone', value: user.phone.isNotEmpty ? user.phone : 'N/A'),
+              DetailRow(label: 'Role', value: user.role.displayName),
+              DetailRow(
+                label: 'Created',
+                value: DateFormat.yMMMd().add_jm().format(user.createdAt),
               ),
-              _detailRow(
-                'Updated',
-                DateFormat.yMMMd().add_jm().format(user.updatedAt),
+              DetailRow(
+                label: 'Updated',
+                value: DateFormat.yMMMd().add_jm().format(user.updatedAt),
               ),
             ],
           ),
@@ -211,72 +213,6 @@ class _UsersScreenState extends State<UsersScreen> {
             child: const Text('Close'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.grey500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTypography.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  final UserRole role;
-
-  const _RoleChip({required this.role});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (role) {
-      case UserRole.customer:
-        color = AppColors.primary;
-      case UserRole.driver:
-        color = Colors.blue;
-      case UserRole.vendor:
-        color = AppColors.success;
-      case UserRole.admin:
-        color = AppColors.error;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: AppRadius.borderRadiusSm,
-      ),
-      child: Text(
-        role.displayName,
-        style: AppTypography.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

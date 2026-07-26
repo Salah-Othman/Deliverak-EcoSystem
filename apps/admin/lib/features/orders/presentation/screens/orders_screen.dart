@@ -6,6 +6,8 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../../shared/widgets/admin_widgets.dart';
+
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
@@ -148,11 +150,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   title: Row(
                     children: [
                       Text(
-                        'Order #${order.orderId.substring(0, 8)}',
+                        'Order #${order.orderId.length > 8 ? order.orderId.substring(0, 8) : order.orderId}',
                         style: AppTypography.labelLarge,
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      _StatusChip(status: order.status),
+                      OrderStatusChip(status: order.status),
                     ],
                   ),
                   subtitle: Text(
@@ -188,23 +190,23 @@ class _OrdersScreenState extends State<OrdersScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _detailRow('Status', order.status.displayName),
-                _detailRow('Customer ID', order.customerId),
-                _detailRow('Vendor ID', order.vendorId),
+                DetailRow(label: 'Status', value: order.status.displayName),
+                DetailRow(label: 'Customer ID', value: order.customerId),
+                DetailRow(label: 'Vendor ID', value: order.vendorId),
                 if (order.driverId != null)
-                  _detailRow('Driver ID', order.driverId!),
-                _detailRow('Payment', order.paymentMethod),
-                _detailRow(
-                  'Total',
-                  '\$${order.totalAmount.toStringAsFixed(2)}',
+                  DetailRow(label: 'Driver ID', value: order.driverId!),
+                DetailRow(label: 'Payment', value: order.paymentMethod),
+                DetailRow(
+                  label: 'Total',
+                  value: '\$${order.totalAmount.toStringAsFixed(2)}',
                 ),
-                _detailRow(
-                  'Delivery Fee',
-                  '\$${order.deliveryFee.toStringAsFixed(2)}',
+                DetailRow(
+                  label: 'Delivery Fee',
+                  value: '\$${order.deliveryFee.toStringAsFixed(2)}',
                 ),
-                _detailRow(
-                  'Created',
-                  DateFormat.yMMMd().add_jm().format(order.createdAt),
+                DetailRow(
+                  label: 'Created',
+                  value: DateFormat.yMMMd().add_jm().format(order.createdAt),
                 ),
                 const Divider(),
                 Text(
@@ -242,8 +244,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   order.deliveryAddress.address,
                   style: AppTypography.bodyMedium,
                 ),
-                _detailRow('Name', order.deliveryAddress.name),
-                _detailRow('Phone', order.deliveryAddress.phone),
+                DetailRow(label: 'Name', value: order.deliveryAddress.name),
+                DetailRow(label: 'Phone', value: order.deliveryAddress.phone),
               ],
             ),
           ),
@@ -254,76 +256,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: const Text('Close'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.grey500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTypography.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final OrderStatus status;
-
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status) {
-      case OrderStatus.pending:
-        color = AppColors.warning;
-      case OrderStatus.accepted:
-      case OrderStatus.preparing:
-        color = AppColors.primary;
-      case OrderStatus.pickedUp:
-      case OrderStatus.inTransit:
-        color = Colors.blue;
-      case OrderStatus.delivered:
-        color = AppColors.success;
-      case OrderStatus.cancelled:
-        color = AppColors.error;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: AppRadius.borderRadiusSm,
-      ),
-      child: Text(
-        status.displayName,
-        style: AppTypography.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

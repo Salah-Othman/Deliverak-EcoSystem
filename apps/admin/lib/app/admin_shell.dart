@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:providers/providers.dart';
 import 'package:ui_kit/ui_kit.dart';
-
-import '../../features/auth/cubit/admin_auth_cubit.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/users/presentation/screens/users_screen.dart';
 import '../../features/vendors/presentation/screens/vendors_screen.dart';

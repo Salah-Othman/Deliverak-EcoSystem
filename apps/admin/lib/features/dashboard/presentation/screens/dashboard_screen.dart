@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../../shared/widgets/admin_widgets.dart';
 import '../widgets/stats_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -181,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final order = state.recentOrders[index];
           return ListTile(
             title: Text(
-              'Order #${order.orderId.substring(0, 8)}',
+                    'Order #${order.orderId.length > 8 ? order.orderId.substring(0, 8) : order.orderId}',
               style: AppTypography.labelLarge,
             ),
             subtitle: Text(
@@ -190,52 +191,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: AppColors.grey600,
               ),
             ),
-            trailing: _StatusChip(status: order.status),
+            trailing: OrderStatusChip(status: order.status),
           );
         },
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final OrderStatus status;
-
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    switch (status) {
-      case OrderStatus.pending:
-        color = AppColors.warning;
-      case OrderStatus.accepted:
-      case OrderStatus.preparing:
-        color = AppColors.primary;
-      case OrderStatus.pickedUp:
-      case OrderStatus.inTransit:
-        color = Colors.blue;
-      case OrderStatus.delivered:
-        color = AppColors.success;
-      case OrderStatus.cancelled:
-        color = AppColors.error;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: AppRadius.borderRadiusSm,
-      ),
-      child: Text(
-        status.displayName,
-        style: AppTypography.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

@@ -5,6 +5,8 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../../shared/widgets/admin_widgets.dart';
+
 class VendorsScreen extends StatefulWidget {
   const VendorsScreen({super.key});
 
@@ -168,7 +170,7 @@ class _VendorsScreenState extends State<VendorsScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _OpenStatusChip(isOpen: vendor.isOpen),
+                      OpenStatusChip(isOpen: vendor.isOpen),
                       const SizedBox(width: AppSpacing.sm),
                       IconButton(
                         icon: const Icon(Icons.info_outline, size: 20),
@@ -214,13 +216,13 @@ class _VendorsScreenState extends State<VendorsScreen> {
                   ),
                 ),
               const SizedBox(height: AppSpacing.md),
-              _detailRow('ID', vendor.vendorId),
-              _detailRow('Category', vendor.category.displayName),
-              _detailRow('Address', vendor.address),
-              _detailRow('Rating', vendor.rating.toStringAsFixed(1)),
-              _detailRow('Total Orders', '${vendor.totalOrders}'),
-              _detailRow('Status', vendor.isOpen ? 'Open' : 'Closed'),
-              _detailRow('Owner ID', vendor.ownerId),
+              DetailRow(label: 'ID', value: vendor.vendorId),
+              DetailRow(label: 'Category', value: vendor.category.displayName),
+              DetailRow(label: 'Address', value: vendor.address),
+              DetailRow(label: 'Rating', value: vendor.rating.toStringAsFixed(1)),
+              DetailRow(label: 'Total Orders', value: '${vendor.totalOrders}'),
+              DetailRow(label: 'Status', value: vendor.isOpen ? 'Open' : 'Closed'),
+              DetailRow(label: 'Owner ID', value: vendor.ownerId),
             ],
           ),
         ),
@@ -230,61 +232,6 @@ class _VendorsScreenState extends State<VendorsScreen> {
             child: const Text('Close'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.grey500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTypography.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OpenStatusChip extends StatelessWidget {
-  final bool isOpen;
-
-  const _OpenStatusChip({required this.isOpen});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: (isOpen ? AppColors.success : AppColors.error)
-            .withValues(alpha: 0.1),
-        borderRadius: AppRadius.borderRadiusSm,
-      ),
-      child: Text(
-        isOpen ? 'Open' : 'Closed',
-        style: AppTypography.caption.copyWith(
-          color: isOpen ? AppColors.success : AppColors.error,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }

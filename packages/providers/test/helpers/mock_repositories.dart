@@ -3,6 +3,8 @@ import 'package:core/core.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
 
+class MockUserRepository extends Mock implements IUserRepository {}
+
 class MockVendorRepository extends Mock implements IVendorRepository {}
 
 class MockProductRepository extends Mock implements IProductRepository {}

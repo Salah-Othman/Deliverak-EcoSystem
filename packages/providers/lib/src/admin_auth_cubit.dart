@@ -58,9 +58,10 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   void initAuthListener() {
     _authSubscription?.cancel();
     _authSubscription = _authRepository.authStateChanges.listen((user) {
-      if (user != null) {
+      if (isClosed) return;
+      if (user != null && state is! AdminAuthenticated) {
         _loadUser(user.uid);
-      } else if (state is! AdminAuthLoading) {
+      } else if (user == null && state is! AdminAuthLoading) {
         emit(AdminUnauthenticated());
       }
     });
@@ -70,6 +71,7 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
     emit(AdminAuthLoading());
     try {
       final user = await _authRepository.signInWithEmail(email, password);
+      if (isClosed) return;
       if (user.role != UserRole.admin) {
         await _authRepository.signOut();
         emit(const AdminAuthError(
@@ -79,6 +81,7 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
       }
       emit(AdminAuthenticated(user));
     } catch (e) {
+      if (isClosed) return;
       emit(AdminAuthError(
         message: mapExceptionToMessage(e),
         isRetryable: isRetryableError(e),
@@ -89,23 +92,32 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   Future<void> _loadUser(String uid) async {
     try {
       final user = await _authRepository.getCurrentUser();
+      if (isClosed) return;
       if (user != null && user.role == UserRole.admin) {
         emit(AdminAuthenticated(user));
       } else {
         await _authRepository.signOut();
-        emit(AdminUnauthenticated());
+        if (!isClosed) {
+          emit(AdminUnauthenticated());
+        }
       }
     } catch (e) {
-      emit(AdminAuthError(message: mapExceptionToMessage(e)));
+      if (!isClosed) {
+        emit(AdminAuthError(message: mapExceptionToMessage(e)));
+      }
     }
   }
 
   Future<void> signOut() async {
     try {
       await _authRepository.signOut();
-      emit(AdminUnauthenticated());
+      if (!isClosed) {
+        emit(AdminUnauthenticated());
+      }
     } catch (e) {
-      emit(AdminAuthError(message: mapExceptionToMessage(e)));
+      if (!isClosed) {
+        emit(AdminAuthError(message: mapExceptionToMessage(e)));
+      }
     }
   }
 }

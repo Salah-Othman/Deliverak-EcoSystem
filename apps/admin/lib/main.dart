@@ -10,7 +10,6 @@ import 'package:providers/providers.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 import 'config/firebase_options.dart';
-import 'features/auth/cubit/admin_auth_cubit.dart';
 import 'app/admin_router.dart';
 
 void main() async {

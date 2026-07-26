@@ -253,7 +253,7 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
-  Future<UserModel> signUpWithEmail(String email, String password, {required String name}) async {
+  Future<UserModel> signUpWithEmail(String email, String password, {required String name, required UserRole role}) async {
     final userCredential = await _authService.signUpWithEmail(email, password);
     final user = userCredential.user;
 
@@ -272,7 +272,7 @@ class AuthRepository implements IAuthRepository {
       name: name,
       email: email,
       phone: '',
-      role: UserRole.admin,
+      role: role,
       createdAt: now,
       updatedAt: now,
     );

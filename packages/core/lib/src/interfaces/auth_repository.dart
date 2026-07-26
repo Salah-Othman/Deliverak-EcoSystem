@@ -49,7 +49,7 @@ abstract class IAuthRepository {
 
   Future<UserModel> signInWithEmail(String email, String password);
 
-  Future<UserModel> signUpWithEmail(String email, String password, {required String name});
+  Future<UserModel> signUpWithEmail(String email, String password, {required String name, required UserRole role});
 
   Future<void> signOut();
 }
