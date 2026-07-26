@@ -24,7 +24,8 @@ class OrderRepository implements IOrderRepository {
     required DeliveryAddress deliveryAddress,
   }) async {
     final now = DateTime.now();
-    final orderDocId = '${now.millisecondsSinceEpoch}_$customerId';
+    final orderDocId =
+        '${now.millisecondsSinceEpoch}_${customerId.hashCode}';
 
     final order = OrderModel(
       orderId: orderDocId,
@@ -58,7 +59,8 @@ class OrderRepository implements IOrderRepository {
     String? driverId,
     OrderStatus? status,
   }) async {
-    final cacheKey = 'orders_${customerId ?? vendorId ?? driverId ?? 'all'}';
+    final cacheKey =
+        'orders_c${customerId ?? ''}_v${vendorId ?? ''}_d${driverId ?? ''}';
     final cached = _cacheService.get<String>(_kOrdersBox, cacheKey);
 
     if (cached != null) {
@@ -166,7 +168,7 @@ class OrderRepository implements IOrderRepository {
       }).toList();
 
       final cacheKey =
-          'orders_${customerId ?? vendorId ?? driverId ?? 'all'}';
+          'orders_c${customerId ?? ''}_v${vendorId ?? ''}_d${driverId ?? ''}';
       _cacheService.put<String>(
         _kOrdersBox,
         cacheKey,

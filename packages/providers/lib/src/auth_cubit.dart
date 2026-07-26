@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,31 +62,41 @@ class AuthError extends AuthState {
   final String message;
   final String? code;
   final bool isRetryable;
+  final AuthState? previousState;
 
   const AuthError({
     required this.message,
     this.code,
     this.isRetryable = false,
+    this.previousState,
   });
 
   @override
-  List<Object?> get props => [message, code, isRetryable];
+  List<Object?> get props => [message, code, isRetryable, previousState];
 }
 
 // ── Cubit ───────────────────────────────────────────────
 
 class AuthCubit extends Cubit<AuthState> {
   final IAuthRepository _authRepository;
+  StreamSubscription<User?>? _authSubscription;
 
   AuthCubit({required IAuthRepository authRepository})
       : _authRepository = authRepository,
         super(AuthInitial());
 
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
+  }
+
   void initAuthListener() {
-    _authRepository.authStateChanges.listen((user) {
+    _authSubscription?.cancel();
+    _authSubscription = _authRepository.authStateChanges.listen((user) {
       if (user != null) {
         _loadUser(user.uid);
-      } else if (state is! PhoneSubmitted) {
+      } else if (state is! PhoneSubmitted && state is! ProfileSetup) {
         emit(Unauthenticated());
       }
     });
@@ -129,12 +141,19 @@ class AuthCubit extends Cubit<AuthState> {
       message: _mapAuthError(error),
       code: error.code,
       isRetryable: _isRetryableAuthError(error),
+      previousState: state,
     ));
   }
 
   Future<void> submitOtp(String otp) async {
     final currentState = state;
-    if (currentState is! PhoneSubmitted) return;
+    if (currentState is! PhoneSubmitted) {
+      emit(const AuthError(
+        message: 'Verification session expired. Please try again.',
+        isRetryable: true,
+      ));
+      return;
+    }
 
     final credential = PhoneAuthProvider.credential(
       verificationId: currentState.verificationId,
@@ -152,6 +171,7 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> _submitCredential(PhoneAuthCredential credential) async {
+    final previousState = state;
     emit(AuthLoading());
     try {
       await _authRepository.signInWithCredential(credential);
@@ -160,6 +180,7 @@ class AuthCubit extends Cubit<AuthState> {
         message: mapExceptionToMessage(e),
         code: e is AppException ? e.code : null,
         isRetryable: e is AppException ? e.isRetryable : false,
+        previousState: previousState,
       ));
     }
   }
@@ -214,7 +235,6 @@ class AuthCubit extends Cubit<AuthState> {
         profileImage: profileImage,
       );
 
-      await _authRepository.saveCachedUser(updatedUser);
       emit(Authenticated(updatedUser));
     } catch (e) {
       emit(AuthError(

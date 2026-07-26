@@ -30,7 +30,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final currentState = context.read<AuthCubit>().state;
     if (currentState is! ProfileSetup) return;
 
-    final role = currentState.selectedRole ?? UserRole.customer;
+    final role = currentState.selectedRole;
+    if (role == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please go back and select a role'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     context.read<AuthCubit>().completeProfile(
           name: _nameController.text.trim(),
@@ -145,7 +154,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Container(
             width: 100,
             height: 100,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.grey200,
               shape: BoxShape.circle,
             ),
@@ -186,7 +195,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       builder: (context, state) {
         if (state is! ProfileSetup) return const SizedBox.shrink();
 
-        final role = state.selectedRole ?? UserRole.customer;
+        final role = state.selectedRole;
+        if (role == null) return const SizedBox.shrink();
+
         return Center(
           child: Chip(
             avatar: Icon(

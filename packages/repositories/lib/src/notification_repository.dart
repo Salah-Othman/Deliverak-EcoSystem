@@ -79,7 +79,6 @@ class NotificationRepository implements INotificationRepository {
         'isRead': true,
       },
     );
-    await _cacheService.clearBox(_kNotificationsBox);
   }
 
   @override
@@ -98,7 +97,8 @@ class NotificationRepository implements INotificationRepository {
         },
       );
     }
-    await _cacheService.clearBox(_kNotificationsBox);
+
+    await _cacheService.delete(_kNotificationsBox, 'notifications_$userId');
   }
 
   @override

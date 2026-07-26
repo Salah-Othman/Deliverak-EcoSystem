@@ -97,6 +97,11 @@ class AuthRepository implements IAuthRepository {
     final user = _authService.currentUser;
     if (user == null) return null;
 
+    final cached = await getCachedUser();
+    if (cached != null && cached.uid == user.uid) {
+      return cached;
+    }
+
     final doc = await _firestoreService.getDocument(
       collection: FirestorePaths.users,
       documentId: user.uid,
@@ -148,6 +153,8 @@ class AuthRepository implements IAuthRepository {
     String? email,
     String? profileImage,
   }) async {
+    final existing = await getCachedUser();
+
     final updates = <String, dynamic>{
       'name': name,
       'role': role.name,
@@ -163,18 +170,15 @@ class AuthRepository implements IAuthRepository {
       data: updates,
     );
 
-    final updatedUser = UserModel(
-      uid: uid,
-      name: name,
-      email: email ?? '',
-      phone: '',
-      role: role,
-      profileImage: profileImage,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    await saveCachedUser(updatedUser);
+    if (existing != null) {
+      final updatedUser = existing.copyWith(
+        name: name,
+        role: role,
+        email: email,
+        profileImage: profileImage,
+      );
+      await saveCachedUser(updatedUser);
+    }
   }
 
   @override

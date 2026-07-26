@@ -18,7 +18,8 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final List<FocusNode> _keyboardFocusNodes =
       List.generate(6, (_) => FocusNode());
 
   int _resendSeconds = 60;
@@ -37,6 +38,9 @@ class _OtpScreenState extends State<OtpScreen> {
       c.dispose();
     }
     for (final f in _focusNodes) {
+      f.dispose();
+    }
+    for (final f in _keyboardFocusNodes) {
       f.dispose();
     }
     super.dispose();
@@ -177,7 +181,7 @@ class _OtpScreenState extends State<OtpScreen> {
           height: 56,
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
           child: KeyboardListener(
-            focusNode: FocusNode(),
+            focusNode: _keyboardFocusNodes[index],
             onKeyEvent: (event) => _onKeyDown(index, event),
             child: TextFormField(
               controller: _controllers[index],

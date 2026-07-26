@@ -78,7 +78,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
   void _onRoleSelected(BuildContext context, UserRole role) {
     context.read<AuthCubit>().selectRole(role);
-    Navigator.of(context).push(
+    Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => const ProfileSetupScreen(),
       ),
