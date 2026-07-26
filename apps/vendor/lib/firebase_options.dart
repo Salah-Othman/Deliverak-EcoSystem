@@ -4,16 +4,8 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
-/// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
+import 'config/env.dart';
+
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -49,20 +41,20 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAaoCQMwai5cYSOlZbzpKXOwTUUPh28tQw',
-    appId: '1:592568856116:android:39568289ae5ca373152461',
-    messagingSenderId: '592568856116',
-    projectId: 'deliverak-e48cd',
-    storageBucket: 'deliverak-e48cd.firebasestorage.app',
-  );
+  static FirebaseOptions get android => FirebaseOptions(
+        apiKey: Env.firebaseApiKey,
+        appId: Env.firebaseAppId,
+        messagingSenderId: Env.firebaseMessagingSenderId,
+        projectId: Env.projectId,
+        storageBucket: Env.firebaseStorageBucket,
+      );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCpaZTXedVCAEMipmUbFGMwdXsE08N9b9U',
-    appId: '1:592568856116:ios:a1f8ff12074f6525152461',
-    messagingSenderId: '592568856116',
-    projectId: 'deliverak-e48cd',
-    storageBucket: 'deliverak-e48cd.firebasestorage.app',
-    iosBundleId: 'com.deliverak.vendor',
-  );
+  static FirebaseOptions get ios => FirebaseOptions(
+        apiKey: Env.firebaseApiKey,
+        appId: Env.firebaseAppId,
+        messagingSenderId: Env.firebaseMessagingSenderId,
+        projectId: Env.projectId,
+        storageBucket: Env.firebaseStorageBucket,
+        iosBundleId: 'com.deliverak.vendor',
+      );
 }

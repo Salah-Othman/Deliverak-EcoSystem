@@ -11,5 +11,13 @@ void main() {
     expect(OrderCubit, isNotNull);
     expect(SearchCubit, isNotNull);
     expect(NotificationCubit, isNotNull);
+    expect(AdminAuthCubit, isNotNull);
+    expect(AdminCubit, isNotNull);
+    expect(AdminUserCubit, isNotNull);
+    expect(VendorOrderCubit, isNotNull);
+    expect(VendorProductCubit, isNotNull);
+    expect(VendorProfileCubit, isNotNull);
+    expect(DriverCubit, isNotNull);
+    expect(DriverOrderCubit, isNotNull);
   });
 }

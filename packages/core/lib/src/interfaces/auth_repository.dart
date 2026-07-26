@@ -18,6 +18,10 @@ abstract class IAuthRepository {
 
   Future<UserModel> signInWithCredential(PhoneAuthCredential credential);
 
+  Future<UserModel> signInWithEmail(String email, String password);
+
+  Future<UserModel> signUpWithEmail(String email, String password, {String? name});
+
   Future<UserModel?> getCurrentUser();
 
   Future<void> updateUserProfile({
@@ -46,10 +50,6 @@ abstract class IAuthRepository {
   Future<UserModel?> getCachedUser();
 
   Future<void> clearCachedUser();
-
-  Future<UserModel> signInWithEmail(String email, String password);
-
-  Future<UserModel> signUpWithEmail(String email, String password, {required String name, required UserRole role});
 
   Future<void> signOut();
 }

@@ -26,7 +26,9 @@ class AdminAuthenticated extends AdminAuthState {
   List<Object?> get props => [user];
 }
 
-class AdminUnauthenticated extends AdminAuthState {}
+class AdminUnauthenticated extends AdminAuthState {
+  const AdminUnauthenticated();
+}
 
 class AdminAuthError extends AdminAuthState {
   final String message;
@@ -49,39 +51,38 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
       : _authRepository = authRepository,
         super(AdminAuthInitial());
 
-  @override
-  Future<void> close() {
-    _authSubscription?.cancel();
-    return super.close();
-  }
-
   void initAuthListener() {
     _authSubscription?.cancel();
-    _authSubscription = _authRepository.authStateChanges.listen((user) {
-      if (isClosed) return;
-      if (user != null && state is! AdminAuthenticated) {
-        _loadUser(user.uid);
-      } else if (user == null && state is! AdminAuthLoading) {
-        emit(AdminUnauthenticated());
-      }
-    });
+    _authSubscription = _authRepository.authStateChanges.listen(
+      (user) async {
+        if (isClosed) return;
+        if (user == null) {
+          emit(const AdminUnauthenticated());
+          return;
+        }
+        await _loadUser(user.uid);
+      },
+    );
   }
 
   Future<void> signInWithEmail(String email, String password) async {
     emit(AdminAuthLoading());
     try {
       final user = await _authRepository.signInWithEmail(email, password);
-      if (isClosed) return;
       if (user.role != UserRole.admin) {
         await _authRepository.signOut();
         emit(const AdminAuthError(
-          message: 'Access denied. Admin account required.',
+          message: 'Access denied. Admin privileges required.',
         ));
         return;
       }
       emit(AdminAuthenticated(user));
+    } on AppException catch (e) {
+      emit(AdminAuthError(
+        message: e.message,
+        isRetryable: e.isRetryable,
+      ));
     } catch (e) {
-      if (isClosed) return;
       emit(AdminAuthError(
         message: mapExceptionToMessage(e),
         isRetryable: isRetryableError(e),
@@ -92,32 +93,40 @@ class AdminAuthCubit extends Cubit<AdminAuthState> {
   Future<void> _loadUser(String uid) async {
     try {
       final user = await _authRepository.getCurrentUser();
-      if (isClosed) return;
-      if (user != null && user.role == UserRole.admin) {
-        emit(AdminAuthenticated(user));
-      } else {
+      if (user == null) {
+        emit(const AdminUnauthenticated());
+        return;
+      }
+      if (user.role != UserRole.admin) {
         await _authRepository.signOut();
-        if (!isClosed) {
-          emit(AdminUnauthenticated());
-        }
+        emit(const AdminAuthError(
+          message: 'Access denied. Admin privileges required.',
+        ));
+        return;
       }
+      emit(AdminAuthenticated(user));
     } catch (e) {
-      if (!isClosed) {
-        emit(AdminAuthError(message: mapExceptionToMessage(e)));
-      }
+      emit(AdminAuthError(
+        message: mapExceptionToMessage(e),
+      ));
     }
   }
 
   Future<void> signOut() async {
     try {
       await _authRepository.signOut();
-      if (!isClosed) {
-        emit(AdminUnauthenticated());
-      }
+      emit(const AdminUnauthenticated());
     } catch (e) {
-      if (!isClosed) {
-        emit(AdminAuthError(message: mapExceptionToMessage(e)));
-      }
+      emit(AdminAuthError(
+        message: mapExceptionToMessage(e),
+        isRetryable: isRetryableError(e),
+      ));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
   }
 }

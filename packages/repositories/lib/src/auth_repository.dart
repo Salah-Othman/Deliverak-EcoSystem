@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:core/core.dart';
@@ -12,16 +13,21 @@ class AuthRepository implements IAuthRepository {
   final IFirestoreService _firestoreService;
   final ISecureStorageService _secureStorage;
   final ICacheService _cacheService;
+  final INotificationService? _notificationService;
+
+  StreamSubscription<String>? _fcmTokenSubscription;
 
   AuthRepository({
     required IAuthService authService,
     required IFirestoreService firestoreService,
     required ISecureStorageService secureStorage,
     required ICacheService cacheService,
+    INotificationService? notificationService,
   })  : _authService = authService,
         _firestoreService = firestoreService,
         _secureStorage = secureStorage,
-        _cacheService = cacheService;
+        _cacheService = cacheService,
+        _notificationService = notificationService;
 
   @override
   Stream<User?> get authStateChanges => _authService.authStateChanges;
@@ -75,6 +81,94 @@ class AuthRepository implements IAuthRepository {
     final newUser = UserModel(
       uid: user.uid,
       name: user.displayName ?? '',
+      email: user.email ?? '',
+      phone: user.phoneNumber ?? '',
+      role: UserRole.customer,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await _firestoreService.setDocument(
+      collection: FirestorePaths.users,
+      documentId: user.uid,
+      data: newUser.toMap(),
+    );
+
+    await saveCachedUser(newUser);
+    return newUser;
+  }
+
+  @override
+  Future<UserModel> signInWithEmail(String email, String password) async {
+    final userCredential =
+        await _authService.signInWithEmailAndPassword(email, password);
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw const AuthException(message: 'Failed to sign in');
+    }
+
+    final token = await user.getIdToken();
+    if (token != null) {
+      await saveToken(token);
+    }
+
+    final doc = await _firestoreService.getDocument(
+      collection: FirestorePaths.users,
+      documentId: user.uid,
+    );
+
+    if (doc.exists) {
+      final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      await saveCachedUser(userModel);
+      return userModel;
+    }
+
+    final now = DateTime.now();
+    final newUser = UserModel(
+      uid: user.uid,
+      name: user.displayName ?? '',
+      email: user.email ?? '',
+      phone: user.phoneNumber ?? '',
+      role: UserRole.customer,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await _firestoreService.setDocument(
+      collection: FirestorePaths.users,
+      documentId: user.uid,
+      data: newUser.toMap(),
+    );
+
+    await saveCachedUser(newUser);
+    return newUser;
+  }
+
+  @override
+  Future<UserModel> signUpWithEmail(String email, String password,
+      {String? name}) async {
+    final userCredential =
+        await _authService.createUserWithEmailAndPassword(email, password);
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw const AuthException(message: 'Failed to create account');
+    }
+
+    if (name != null) {
+      await user.updateDisplayName(name);
+    }
+
+    final token = await user.getIdToken();
+    if (token != null) {
+      await saveToken(token);
+    }
+
+    final now = DateTime.now();
+    final newUser = UserModel(
+      uid: user.uid,
+      name: name ?? '',
       email: user.email ?? '',
       phone: user.phoneNumber ?? '',
       role: UserRole.customer,
@@ -219,71 +313,50 @@ class AuthRepository implements IAuthRepository {
 
   @override
   Future<void> signOut() async {
+    await _clearFcmToken();
+    _fcmTokenSubscription?.cancel();
     await _authService.signOut();
     await clearToken();
     await clearCachedUser();
   }
 
-  @override
-  Future<UserModel> signInWithEmail(String email, String password) async {
-    final userCredential = await _authService.signInWithEmail(email, password);
-    final user = userCredential.user;
-
-    if (user == null) {
-      throw const AuthException(message: 'Failed to sign in');
-    }
-
-    final token = await user.getIdToken();
-    if (token != null) {
-      await saveToken(token);
-    }
-
-    final doc = await _firestoreService.getDocument(
-      collection: FirestorePaths.users,
-      documentId: user.uid,
+  void startFcmTokenListener(String uid) {
+    _fcmTokenSubscription?.cancel();
+    _saveFcmToken(uid);
+    _fcmTokenSubscription = _notificationService?.onTokenRefresh.listen(
+      (token) => _updateFcmToken(uid, token),
     );
-
-    if (doc.exists) {
-      final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
-      await saveCachedUser(userModel);
-      return userModel;
-    }
-
-    throw const AuthException(message: 'User not found');
   }
 
-  @override
-  Future<UserModel> signUpWithEmail(String email, String password, {required String name, required UserRole role}) async {
-    final userCredential = await _authService.signUpWithEmail(email, password);
-    final user = userCredential.user;
+  Future<void> _saveFcmToken(String uid) async {
+    if (_notificationService == null) return;
+    try {
+      final token = await _notificationService!.getToken();
+      if (token != null) {
+        await _updateFcmToken(uid, token);
+      }
+    } catch (_) {}
+  }
 
-    if (user == null) {
-      throw const AuthException(message: 'Failed to create account');
-    }
+  Future<void> _updateFcmToken(String uid, String token) async {
+    try {
+      await _firestoreService.updateDocument(
+        collection: FirestorePaths.users,
+        documentId: uid,
+        data: {'fcmToken': token},
+      );
+    } catch (_) {}
+  }
 
-    final token = await user.getIdToken();
-    if (token != null) {
-      await saveToken(token);
-    }
-
-    final now = DateTime.now();
-    final newUser = UserModel(
-      uid: user.uid,
-      name: name,
-      email: email,
-      phone: '',
-      role: role,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    await _firestoreService.setDocument(
-      collection: FirestorePaths.users,
-      documentId: user.uid,
-      data: newUser.toMap(),
-    );
-
-    await saveCachedUser(newUser);
-    return newUser;
+  Future<void> _clearFcmToken() async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+    try {
+      await _firestoreService.updateDocument(
+        collection: FirestorePaths.users,
+        documentId: user.uid,
+        data: {'fcmToken': null},
+      );
+    } catch (_) {}
   }
 }

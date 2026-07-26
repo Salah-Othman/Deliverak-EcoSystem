@@ -10,6 +10,9 @@ class FCMService implements INotificationService {
   }
 
   @override
+  Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;
+
+  @override
   Future<void> subscribeToTopic(String topic) async {
     await _messaging.subscribeToTopic(topic);
   }

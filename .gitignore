@@ -54,3 +54,4 @@ packages/*/pubspec.lock
 
 # Melos
 .melos/
+/node_modules

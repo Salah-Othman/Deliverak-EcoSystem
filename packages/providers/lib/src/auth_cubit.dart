@@ -266,6 +266,51 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  Future<void> signInWithEmail(String email, String password) async {
+    final previousState = state;
+    emit(AuthLoading());
+    try {
+      await _authRepository.signInWithEmail(email, password);
+    } on FirebaseAuthException catch (e) {
+      emit(AuthError(
+        message: _mapAuthError(e),
+        code: e.code,
+        isRetryable: _isRetryableAuthError(e),
+        previousState: previousState,
+      ));
+    } catch (e) {
+      emit(AuthError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: e is AppException ? e.isRetryable : false,
+        previousState: previousState,
+      ));
+    }
+  }
+
+  Future<void> signUpWithEmail(String email, String password,
+      {String? name}) async {
+    final previousState = state;
+    emit(AuthLoading());
+    try {
+      await _authRepository.signUpWithEmail(email, password, name: name);
+    } on FirebaseAuthException catch (e) {
+      emit(AuthError(
+        message: _mapAuthError(e),
+        code: e.code,
+        isRetryable: _isRetryableAuthError(e),
+        previousState: previousState,
+      ));
+    } catch (e) {
+      emit(AuthError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: e is AppException ? e.isRetryable : false,
+        previousState: previousState,
+      ));
+    }
+  }
+
   Future<void> signOut() async {
     try {
       await _authRepository.signOut();
@@ -291,6 +336,20 @@ class AuthCubit extends Cubit<AuthState> {
         return 'SMS quota exceeded. Please try again later.';
       case 'network-request-failed':
         return 'No internet connection. Check your network.';
+      case 'invalid-email':
+        return 'The email address is invalid.';
+      case 'user-disabled':
+        return 'This account has been disabled. Contact support.';
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'email-already-in-use':
+        return 'An account already exists with this email.';
+      case 'weak-password':
+        return 'Password is too weak. Use at least 6 characters.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled.';
       default:
         return error.message ?? 'Something went wrong. Please try again.';
     }

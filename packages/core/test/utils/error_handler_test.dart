@@ -86,11 +86,9 @@ void main() {
     });
 
     test('retries on retryable error and throws after max retries', () async {
-      int attempts = 0;
       expect(
         () => retryWithBackoff(
           () async {
-            attempts++;
             throw const NetworkException();
           },
           maxRetries: 2,

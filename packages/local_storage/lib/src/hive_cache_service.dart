@@ -4,7 +4,8 @@ import 'package:core/core.dart';
 
 class HiveCacheService implements ICacheService {
   bool _isInitialized = false;
-  final Set<String> _openedBoxes = {};
+  final Set<String> _openedBoxNames = {};
+  final Map<String, Box<dynamic>> _boxCache = {};
 
   @override
   Future<void> init() async {
@@ -14,17 +15,13 @@ class HiveCacheService implements ICacheService {
     _isInitialized = true;
   }
 
-  Box<T> _getBox<T>(String boxName) {
-    return Hive.box<T>(boxName);
-  }
-
   Future<Box<T>> _openBox<T>(String boxName) async {
-    if (Hive.isBoxOpen(boxName)) {
-      _openedBoxes.add(boxName);
-      return Hive.box<T>(boxName);
+    if (_boxCache.containsKey(boxName)) {
+      return _boxCache[boxName]! as Box<T>;
     }
     final box = await Hive.openBox<T>(boxName);
-    _openedBoxes.add(boxName);
+    _openedBoxNames.add(boxName);
+    _boxCache[boxName] = box;
     return box;
   }
 
@@ -36,39 +33,36 @@ class HiveCacheService implements ICacheService {
 
   @override
   T? get<T>(String boxName, String key) {
-    if (!Hive.isBoxOpen(boxName)) return null;
-    final box = _getBox<T>(boxName);
-    return box.get(key);
+    final box = _boxCache[boxName];
+    if (box == null) return null;
+    return box.get(key) as T?;
   }
 
   @override
   Future<void> delete(String boxName, String key) async {
-    if (!Hive.isBoxOpen(boxName)) return;
-    final box = _getBox(boxName);
+    final box = _boxCache[boxName];
+    if (box == null) return;
     await box.delete(key);
   }
 
   @override
   Future<void> clearBox(String boxName) async {
-    if (!Hive.isBoxOpen(boxName)) return;
-    final box = _getBox(boxName);
+    final box = _boxCache[boxName];
+    if (box == null) return;
     await box.clear();
   }
 
   @override
   Future<void> clearAll() async {
-    for (final boxName in _openedBoxes) {
-      if (Hive.isBoxOpen(boxName)) {
-        final box = Hive.box(boxName);
-        await box.clear();
-      }
+    for (final box in _boxCache.values) {
+      await box.clear();
     }
   }
 
   @override
   bool containsKey(String boxName, String key) {
-    if (!Hive.isBoxOpen(boxName)) return false;
-    final box = _getBox(boxName);
+    final box = _boxCache[boxName];
+    if (box == null) return false;
     return box.containsKey(key);
   }
 }
