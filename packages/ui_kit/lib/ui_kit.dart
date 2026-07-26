@@ -1,5 +1,3 @@
-library ui_kit;
-
 export 'src/tokens/app_colors.dart';
 export 'src/tokens/app_typography.dart';
 export 'src/tokens/app_spacing.dart';

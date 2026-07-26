@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../tokens/app_colors.dart';
-import '../tokens/app_spacing.dart';
-
 class AdaptiveScaffold extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../tokens/app_colors.dart';
-import '../tokens/app_spacing.dart';
 
 class AppLoader extends StatelessWidget {
   final double size;

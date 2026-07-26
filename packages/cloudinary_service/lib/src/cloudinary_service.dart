@@ -1,23 +1,21 @@
-import 'dart:io';
-
+import 'package:cloudinary/cloudinary.dart';
 import 'package:cloudinary_url_gen/cloudinary.dart' as url_gen;
+import 'package:cloudinary_url_gen/transformation/delivery/delivery.dart';
+import 'package:cloudinary_url_gen/transformation/resize/resize.dart';
+import 'package:cloudinary_url_gen/transformation/transformation.dart';
 import 'package:core/core.dart';
 
 class CloudinaryService implements IStorageService {
-  late final Cloudinaryinary _cloudinaryApi;
+  late final Cloudinary _cloudinary;
   late final url_gen.Cloudinary _cloudinaryUrl;
+  final String _uploadPreset;
 
   CloudinaryService({
     required String cloudName,
     required String uploadPreset,
-  }) {
-    _cloudinaryApi = Cloudinaryinary(
-      cloudName: cloudName,
-      uploadPreset: uploadPreset,
-    );
-    _cloudinaryUrl = url_gen.Cloudinary.fromCloudName(
-      cloudName: cloudName,
-    );
+  }) : _uploadPreset = uploadPreset {
+    _cloudinary = Cloudinary.unsignedConfig(cloudName: cloudName);
+    _cloudinaryUrl = url_gen.Cloudinary.fromCloudName(cloudName: cloudName);
   }
 
   @override
@@ -26,9 +24,9 @@ class CloudinaryService implements IStorageService {
     required String folder,
     Map<String, String>? metadata,
   }) async {
-    final file = File(filePath);
-    final response = await _cloudinaryApi.uploadFile(
-      file: file,
+    final response = await _cloudinary.unsignedUpload(
+      file: filePath,
+      uploadPreset: _uploadPreset,
       folder: folder,
       resourceType: CloudinaryResourceType.image,
     );
@@ -48,7 +46,7 @@ class CloudinaryService implements IStorageService {
 
   @override
   Future<void> deleteFile(String publicId) async {
-    await _cloudinaryApi.deleteFile(publicId: publicId);
+    await _cloudinary.destroy(publicId);
   }
 
   @override
@@ -60,15 +58,28 @@ class CloudinaryService implements IStorageService {
     int? quality,
     String? format,
   }) {
-    var image = _cloudinaryUrl.image(publicId: publicId);
+    final t = Transformation();
 
-    if (width != null) image = image.resize(width: width);
-    if (height != null) image = image.resize(height: height);
-    if (crop != null) image = image.resize(crop: url_gen.Crop.values.firstWhere((e) => e.name == crop, orElse: () => url_gen.Crop.fill));
-    if (quality != null) image = image.quality(quality: quality);
-    if (format != null) image = image.format(url_gen.Format.values.firstWhere((e) => e.name == format, orElse: () => url_gen.Format.auto));
+    if (width != null || height != null) {
+      t.resize(
+        Resize.fill()
+          ..width(width)
+          ..height(height),
+      );
+    }
 
-    return image.toString();
+    if (quality != null) {
+      t.delivery(Delivery.quality(quality));
+    }
+
+    if (format != null) {
+      t.delivery(Delivery.format(format));
+    }
+
+    return _cloudinaryUrl
+        .image(publicId)
+        .transformation(t)
+        .toString();
   }
 
   @override

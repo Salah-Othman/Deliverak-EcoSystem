@@ -1,5 +1,3 @@
-library providers;
-
 export 'src/auth_cubit.dart';
 export 'src/vendor_cubit.dart';
 export 'src/product_cubit.dart';

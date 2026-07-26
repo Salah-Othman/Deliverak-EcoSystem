@@ -14,8 +14,7 @@ dependencies:
   core:
     path: ../core
   cloudinary: ^1.2.2
-  cloudinary_api: ^1.1.1
-  cloudinary_flutter: ^1.3.0
+  cloudinary_url_gen: ^1.8.0
   path: ^1.9.0
 
 dev_dependencies:
