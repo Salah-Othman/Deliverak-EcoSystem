@@ -6,6 +6,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/otp_screen.dart';
+import '../features/auth/presentation/screens/role_selection_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 
 class AppRouter extends StatelessWidget {
@@ -23,6 +24,10 @@ class AppRouter extends StatelessWidget {
 
         if (state is PhoneSubmitted) {
           return const OtpScreen();
+        }
+
+        if (state is ProfileSetup) {
+          return const RoleSelectionScreen();
         }
 
         if (state is Authenticated) {

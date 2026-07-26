@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:core/src/enums/user_role.dart';
 import 'package:core/src/models/user_model.dart';
 
 abstract class IAuthRepository {
@@ -22,6 +23,14 @@ abstract class IAuthRepository {
   Future<void> updateUserProfile({
     required String uid,
     String? name,
+    String? email,
+    String? profileImage,
+  });
+
+  Future<void> completeProfile({
+    required String uid,
+    required String name,
+    required UserRole role,
     String? email,
     String? profileImage,
   });

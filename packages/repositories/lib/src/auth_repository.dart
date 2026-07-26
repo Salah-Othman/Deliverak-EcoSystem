@@ -141,6 +141,43 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
+  Future<void> completeProfile({
+    required String uid,
+    required String name,
+    required UserRole role,
+    String? email,
+    String? profileImage,
+  }) async {
+    final updates = <String, dynamic>{
+      'name': name,
+      'role': role.name,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    if (email != null) updates['email'] = email;
+    if (profileImage != null) updates['profileImage'] = profileImage;
+
+    await _firestoreService.updateDocument(
+      collection: FirestorePaths.users,
+      documentId: uid,
+      data: updates,
+    );
+
+    final updatedUser = UserModel(
+      uid: uid,
+      name: name,
+      email: email ?? '',
+      phone: '',
+      role: role,
+      profileImage: profileImage,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await saveCachedUser(updatedUser);
+  }
+
+  @override
   Future<void> saveToken(String token) async {
     await _secureStorage.write(key: _kTokenKey, value: token);
   }

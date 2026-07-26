@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:core/core.dart';
 
+// ── States ──────────────────────────────────────────────
+
 abstract class AuthState extends Equatable {
   const AuthState();
 
@@ -41,6 +43,19 @@ class PhoneSubmitted extends AuthState {
   List<Object?> get props => [verificationId, phoneNumber, resendToken];
 }
 
+class ProfileSetup extends AuthState {
+  final UserModel user;
+  final UserRole? selectedRole;
+
+  const ProfileSetup({
+    required this.user,
+    this.selectedRole,
+  });
+
+  @override
+  List<Object?> get props => [user, selectedRole];
+}
+
 class AuthError extends AuthState {
   final String message;
   final String? code;
@@ -55,6 +70,8 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message, code, isRetryable];
 }
+
+// ── Cubit ───────────────────────────────────────────────
 
 class AuthCubit extends Cubit<AuthState> {
   final IAuthRepository _authRepository;
@@ -151,12 +168,60 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await _authRepository.getCurrentUser();
       if (user != null) {
-        emit(Authenticated(user));
+        if (user.name.isEmpty) {
+          emit(ProfileSetup(user: user));
+        } else {
+          emit(Authenticated(user));
+        }
       } else {
         emit(Unauthenticated());
       }
     } catch (e) {
       emit(AuthError(message: mapExceptionToMessage(e)));
+    }
+  }
+
+  void selectRole(UserRole role) {
+    final currentState = state;
+    if (currentState is ProfileSetup) {
+      emit(ProfileSetup(user: currentState.user, selectedRole: role));
+    }
+  }
+
+  Future<void> completeProfile({
+    required String name,
+    required UserRole role,
+    String? email,
+    String? profileImage,
+  }) async {
+    final currentState = state;
+    if (currentState is! ProfileSetup) return;
+
+    emit(AuthLoading());
+    try {
+      await _authRepository.completeProfile(
+        uid: currentState.user.uid,
+        name: name,
+        role: role,
+        email: email,
+        profileImage: profileImage,
+      );
+
+      final updatedUser = currentState.user.copyWith(
+        name: name,
+        role: role,
+        email: email,
+        profileImage: profileImage,
+      );
+
+      await _authRepository.saveCachedUser(updatedUser);
+      emit(Authenticated(updatedUser));
+    } catch (e) {
+      emit(AuthError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: e is AppException ? e.isRetryable : false,
+      ));
     }
   }
 
