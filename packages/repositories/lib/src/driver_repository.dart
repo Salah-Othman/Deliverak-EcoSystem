@@ -3,8 +3,9 @@ import 'package:core/core.dart';
 class DriverRepository implements IDriverRepository {
   final IFirestoreService _firestoreService;
 
-  DriverRepository({required IFirestoreService firestoreService})
-      : _firestoreService = firestoreService;
+  DriverRepository({
+    required IFirestoreService firestoreService,
+  }) : _firestoreService = firestoreService;
 
   @override
   Future<DriverModel?> getDriver(String driverId) async {

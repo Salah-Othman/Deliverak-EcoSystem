@@ -29,6 +29,7 @@
 | Real-time | **Firestore Streams** | Live order status, GPS tracking |
 | GPS | **geolocator + google_maps_flutter** | Location tracking + map display |
 | Secure Storage | **flutter_secure_storage** | Encrypted local storage for tokens, sensitive data |
+| Local Cache | **hive** | Offline-first caching, fast key-value store for all entity data |
 | Animations | **Built-in Flutter + shimmer** | Skeleton loading, micro-interactions, page transitions |
 | Logging | **firebase_crashlytics** (optional) | Error tracking and crash reporting in production |
 | Monorepo | **Melos** | Manage multiple apps + shared packages |
@@ -50,6 +51,7 @@ deliverak/
 │   ├── core/              # Models, enums, constants, utils, exceptions, interfaces
 │   ├── firebase_services/ # Firebase service implementations (implements core interfaces)
 │   ├── cloudinary_service/ # Cloudinary service implementation (implements core interfaces)
+│   ├── local_storage/      # SecureStorageService + HiveCacheService (implements core interfaces)
 │   ├── repositories/      # Repository implementations (implements domain interfaces)
 │   ├── providers/         # Cubits (depends on repository interfaces)
 │   └── ui_kit/            # Shared widgets, themes, design tokens
@@ -554,6 +556,12 @@ notifications/
 - Upload preset & folder management
 - URL generation with transformations
 
+### `local_storage` (implements interfaces from `core`)
+- SecureStorageService implements ISecureStorageService (flutter_secure_storage)
+- HiveCacheService implements ICacheService (hive)
+- Manages Hive box initialization and lifecycle
+- Android: EncryptedSharedPreferences, iOS: Keychain
+
 ### `repositories` (implements repository interfaces from `domain/`)
 - AuthRepository implements IAuthRepository
 - VendorRepository implements IVendorRepository
@@ -649,10 +657,20 @@ notifications/{notificationId}
 - Vendor can only modify products under their vendorId
 - Status transitions must follow valid sequence (no skip from pending to delivered)
 
-### Secure Storage
+### Secure Storage & Local Caching
 
-- `flutter_secure_storage` for: FCM tokens, cached auth state, sensitive user data
-- Never store passwords or full payment info (cash-only, but future-proof)
+- `flutter_secure_storage` for:
+  - Auth tokens (JWT) — stored on sign-in, cleared on sign-out
+  - FCM tokens
+  - Any sensitive user data
+  - Android: EncryptedSharedPreferences (AES-256)
+  - iOS: Keychain (hardware-backed)
+- `hive` for offline-first caching:
+  - User profile, vendor listings, product catalogs, orders, notifications
+  - Each entity type in its own Hive box (`vendors_box`, `products_box`, `orders_box`, `user_box`, `notifications_box`)
+  - Cache-first strategy: show cached data immediately, fetch fresh data in background
+  - Cache invalidated on write operations (create/update/delete)
+- On sign-out: clear all secure storage + Hive cache
 
 ### API Key Management
 
@@ -958,6 +976,8 @@ dependencies:
   flutter_local_notifications: ^18.x
   flutter_secure_storage: ^9.x
   shared_preferences: ^2.x
+  hive: ^2.x
+  hive_flutter: ^1.x
   shimmer: ^3.x
   url_launcher: ^6.x
   share_plus: ^10.x

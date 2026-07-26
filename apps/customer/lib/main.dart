@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:core/core.dart';
 import 'package:firebase_services/firebase_services.dart';
 import 'package:cloudinary_service/cloudinary_service.dart';
+import 'package:local_storage/local_storage.dart';
 import 'package:repositories/repositories.dart';
 import 'package:providers/providers.dart';
 import 'package:ui_kit/ui_kit.dart';
@@ -15,20 +16,27 @@ import 'config/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
 
   final IAuthService authService = FirebaseAuthService();
   final IFirestoreService firestoreService = FirestoreService();
   final INotificationService fcmService = FCMService();
+  final ISecureStorageService secureStorage = SecureStorageService();
+  final ICacheService cacheService = HiveCacheService();
+
+  await cacheService.init();
+  await fcmService.requestPermission();
 
   final IStorageService cloudinaryService = CloudinaryService(
     cloudName: Env.cloudinaryCloudName,
     uploadPreset: Env.cloudinaryUploadPreset,
   );
-
-  await fcmService.requestPermission();
 
   runApp(
     DeliverakApp(
@@ -36,6 +44,8 @@ void main() async {
       firestoreService: firestoreService,
       fcmService: fcmService,
       cloudinaryService: cloudinaryService,
+      secureStorage: secureStorage,
+      cacheService: cacheService,
     ),
   );
 }
@@ -45,6 +55,8 @@ class DeliverakApp extends StatelessWidget {
   final IFirestoreService firestoreService;
   final INotificationService fcmService;
   final IStorageService cloudinaryService;
+  final ISecureStorageService secureStorage;
+  final ICacheService cacheService;
 
   const DeliverakApp({
     super.key,
@@ -52,6 +64,8 @@ class DeliverakApp extends StatelessWidget {
     required this.firestoreService,
     required this.fcmService,
     required this.cloudinaryService,
+    required this.secureStorage,
+    required this.cacheService,
   });
 
   @override
@@ -62,26 +76,44 @@ class DeliverakApp extends StatelessWidget {
         RepositoryProvider<IFirestoreService>.value(value: firestoreService),
         RepositoryProvider<INotificationService>.value(value: fcmService),
         RepositoryProvider<IStorageService>.value(value: cloudinaryService),
+        RepositoryProvider<ISecureStorageService>.value(value: secureStorage),
+        RepositoryProvider<ICacheService>.value(value: cacheService),
         RepositoryProvider<IAuthRepository>(
           create: (_) => AuthRepository(
             authService: authService,
             firestoreService: firestoreService,
+            secureStorage: secureStorage,
+            cacheService: cacheService,
           ),
         ),
         RepositoryProvider<IVendorRepository>(
-          create: (_) => VendorRepository(firestoreService: firestoreService),
+          create: (_) => VendorRepository(
+            firestoreService: firestoreService,
+            cacheService: cacheService,
+          ),
         ),
         RepositoryProvider<IProductRepository>(
-          create: (_) => ProductRepository(firestoreService: firestoreService),
+          create: (_) => ProductRepository(
+            firestoreService: firestoreService,
+            cacheService: cacheService,
+          ),
         ),
         RepositoryProvider<IOrderRepository>(
-          create: (_) => OrderRepository(firestoreService: firestoreService),
+          create: (_) => OrderRepository(
+            firestoreService: firestoreService,
+            cacheService: cacheService,
+          ),
         ),
         RepositoryProvider<IDriverRepository>(
-          create: (_) => DriverRepository(firestoreService: firestoreService),
+          create: (_) => DriverRepository(
+            firestoreService: firestoreService,
+          ),
         ),
         RepositoryProvider<INotificationRepository>(
-          create: (_) => NotificationRepository(firestoreService: firestoreService),
+          create: (_) => NotificationRepository(
+            firestoreService: firestoreService,
+            cacheService: cacheService,
+          ),
         ),
       ],
       child: MultiBlocProvider(

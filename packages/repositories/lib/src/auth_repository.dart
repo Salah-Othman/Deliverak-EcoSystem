@@ -1,15 +1,27 @@
+import 'dart:convert';
+
 import 'package:core/core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+const _kTokenKey = 'auth_token';
+const _kUserKey = 'cached_user';
+const _kUserBox = 'user_box';
 
 class AuthRepository implements IAuthRepository {
   final IAuthService _authService;
   final IFirestoreService _firestoreService;
+  final ISecureStorageService _secureStorage;
+  final ICacheService _cacheService;
 
   AuthRepository({
     required IAuthService authService,
     required IFirestoreService firestoreService,
+    required ISecureStorageService secureStorage,
+    required ICacheService cacheService,
   })  : _authService = authService,
-        _firestoreService = firestoreService;
+        _firestoreService = firestoreService,
+        _secureStorage = secureStorage,
+        _cacheService = cacheService;
 
   @override
   Stream<User?> get authStateChanges => _authService.authStateChanges;
@@ -43,13 +55,20 @@ class AuthRepository implements IAuthRepository {
       throw const AuthException(message: 'Failed to sign in');
     }
 
+    final token = await user.getIdToken();
+    if (token != null) {
+      await saveToken(token);
+    }
+
     final doc = await _firestoreService.getDocument(
       collection: FirestorePaths.users,
       documentId: user.uid,
     );
 
     if (doc.exists) {
-      return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      await saveCachedUser(userModel);
+      return userModel;
     }
 
     final now = DateTime.now();
@@ -69,6 +88,7 @@ class AuthRepository implements IAuthRepository {
       data: newUser.toMap(),
     );
 
+    await saveCachedUser(newUser);
     return newUser;
   }
 
@@ -84,7 +104,9 @@ class AuthRepository implements IAuthRepository {
 
     if (!doc.exists) return null;
 
-    return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+    final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+    await saveCachedUser(userModel);
+    return userModel;
   }
 
   @override
@@ -107,10 +129,57 @@ class AuthRepository implements IAuthRepository {
       documentId: uid,
       data: updates,
     );
+
+    final current = await getCachedUser();
+    if (current != null) {
+      await saveCachedUser(current.copyWith(
+        name: name,
+        email: email,
+        profileImage: profileImage,
+      ));
+    }
+  }
+
+  @override
+  Future<void> saveToken(String token) async {
+    await _secureStorage.write(key: _kTokenKey, value: token);
+  }
+
+  @override
+  Future<String?> getToken() async {
+    return await _secureStorage.read(key: _kTokenKey);
+  }
+
+  @override
+  Future<void> clearToken() async {
+    await _secureStorage.delete(key: _kTokenKey);
+  }
+
+  @override
+  Future<void> saveCachedUser(UserModel user) async {
+    await _cacheService.put<String>(
+      _kUserBox,
+      _kUserKey,
+      jsonEncode(user.toMap()),
+    );
+  }
+
+  @override
+  Future<UserModel?> getCachedUser() async {
+    final json = _cacheService.get<String>(_kUserBox, _kUserKey);
+    if (json == null) return null;
+    return UserModel.fromMap(jsonDecode(json) as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> clearCachedUser() async {
+    await _cacheService.delete(_kUserBox, _kUserKey);
   }
 
   @override
   Future<void> signOut() async {
     await _authService.signOut();
+    await clearToken();
+    await clearCachedUser();
   }
 }

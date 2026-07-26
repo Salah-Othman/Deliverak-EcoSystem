@@ -1,10 +1,18 @@
+import 'dart:convert';
+
 import 'package:core/core.dart';
+
+const _kOrdersBox = 'orders_box';
 
 class OrderRepository implements IOrderRepository {
   final IFirestoreService _firestoreService;
+  final ICacheService _cacheService;
 
-  OrderRepository({required IFirestoreService firestoreService})
-      : _firestoreService = firestoreService;
+  OrderRepository({
+    required IFirestoreService firestoreService,
+    required ICacheService cacheService,
+  })  : _firestoreService = firestoreService,
+        _cacheService = cacheService;
 
   @override
   Future<OrderModel> createOrder({
@@ -38,6 +46,8 @@ class OrderRepository implements IOrderRepository {
       data: order.toMap(),
     );
 
+    await _cacheService.delete(_kOrdersBox, 'orders_$customerId');
+
     return order;
   }
 
@@ -48,13 +58,28 @@ class OrderRepository implements IOrderRepository {
     String? driverId,
     OrderStatus? status,
   }) async {
+    final cacheKey = 'orders_${customerId ?? vendorId ?? driverId ?? 'all'}';
+    final cached = _cacheService.get<String>(_kOrdersBox, cacheKey);
+
+    if (cached != null) {
+      return (jsonDecode(cached) as List)
+          .map((e) => OrderModel.fromMap(e as Map<String, dynamic>))
+          .where((order) {
+        if (customerId != null && order.customerId != customerId) return false;
+        if (vendorId != null && order.vendorId != vendorId) return false;
+        if (driverId != null && order.driverId != driverId) return false;
+        if (status != null && order.status != status) return false;
+        return true;
+      }).toList();
+    }
+
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.orders,
       orderBy: 'createdAt',
       descending: true,
     );
 
-    return docs.docs
+    final orders = docs.docs
         .map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>))
         .where((order) {
       if (customerId != null && order.customerId != customerId) return false;
@@ -63,10 +88,23 @@ class OrderRepository implements IOrderRepository {
       if (status != null && order.status != status) return false;
       return true;
     }).toList();
+
+    await _cacheService.put<String>(
+      _kOrdersBox,
+      cacheKey,
+      jsonEncode(orders.map((o) => o.toMap()).toList()),
+    );
+
+    return orders;
   }
 
   @override
   Future<OrderModel?> getOrder(String orderId) async {
+    final cached = _cacheService.get<String>(_kOrdersBox, 'order_$orderId');
+    if (cached != null) {
+      return OrderModel.fromMap(jsonDecode(cached) as Map<String, dynamic>);
+    }
+
     final doc = await _firestoreService.getDocument(
       collection: FirestorePaths.orders,
       documentId: orderId,
@@ -74,7 +112,13 @@ class OrderRepository implements IOrderRepository {
 
     if (!doc.exists) return null;
 
-    return OrderModel.fromMap(doc.data() as Map<String, dynamic>);
+    final order = OrderModel.fromMap(doc.data() as Map<String, dynamic>);
+    await _cacheService.put<String>(
+      _kOrdersBox,
+      'order_$orderId',
+      jsonEncode(order.toMap()),
+    );
+    return order;
   }
 
   @override
@@ -86,7 +130,13 @@ class OrderRepository implements IOrderRepository {
         )
         .map((doc) {
       if (!doc.exists) return null;
-      return OrderModel.fromMap(doc.data() as Map<String, dynamic>);
+      final order = OrderModel.fromMap(doc.data() as Map<String, dynamic>);
+      _cacheService.put<String>(
+        _kOrdersBox,
+        'order_$orderId',
+        jsonEncode(order.toMap()),
+      );
+      return order;
     });
   }
 
@@ -103,16 +153,28 @@ class OrderRepository implements IOrderRepository {
           orderBy: 'createdAt',
           descending: true,
         )
-        .map((snapshot) => snapshot.docs
-            .map((doc) =>
-                OrderModel.fromMap(doc.data() as Map<String, dynamic>))
-            .where((order) {
-          if (customerId != null && order.customerId != customerId) return false;
-          if (vendorId != null && order.vendorId != vendorId) return false;
-          if (driverId != null && order.driverId != driverId) return false;
-          if (status != null && order.status != status) return false;
-          return true;
-        }).toList());
+        .map((snapshot) {
+      final orders = snapshot.docs
+          .map((doc) =>
+              OrderModel.fromMap(doc.data() as Map<String, dynamic>))
+          .where((order) {
+        if (customerId != null && order.customerId != customerId) return false;
+        if (vendorId != null && order.vendorId != vendorId) return false;
+        if (driverId != null && order.driverId != driverId) return false;
+        if (status != null && order.status != status) return false;
+        return true;
+      }).toList();
+
+      final cacheKey =
+          'orders_${customerId ?? vendorId ?? driverId ?? 'all'}';
+      _cacheService.put<String>(
+        _kOrdersBox,
+        cacheKey,
+        jsonEncode(orders.map((o) => o.toMap()).toList()),
+      );
+
+      return orders;
+    });
   }
 
   @override
@@ -125,6 +187,7 @@ class OrderRepository implements IOrderRepository {
         'updatedAt': DateTime.now().toIso8601String(),
       },
     );
+    await _cacheService.delete(_kOrdersBox, 'order_$orderId');
   }
 
   @override
@@ -137,5 +200,6 @@ class OrderRepository implements IOrderRepository {
         'updatedAt': DateTime.now().toIso8601String(),
       },
     );
+    await _cacheService.delete(_kOrdersBox, 'order_$orderId');
   }
 }

@@ -23,6 +23,8 @@ export 'src/interfaces/auth_service.dart';
 export 'src/interfaces/firestore_service.dart';
 export 'src/interfaces/storage_service.dart';
 export 'src/interfaces/notification_service.dart';
+export 'src/interfaces/secure_storage_service.dart';
+export 'src/interfaces/cache_service.dart';
 
 export 'src/interfaces/auth_repository.dart';
 export 'src/interfaces/vendor_repository.dart';

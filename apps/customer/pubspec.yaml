@@ -30,6 +30,8 @@ dependencies:
     path: ../../packages/firebase_services
   cloudinary_service:
     path: ../../packages/cloudinary_service
+  local_storage:
+    path: ../../packages/local_storage
   repositories:
     path: ../../packages/repositories
   providers:

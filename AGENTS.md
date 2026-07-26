@@ -6,7 +6,7 @@ Early-stage Flutter monorepo. **Customer app** is the only app with real code. D
 
 ## Monorepo Structure
 
-Melos manages 4 apps + 6 shared packages:
+Melos manages 4 apps + 7 shared packages:
 
 ```
 apps/
@@ -19,6 +19,7 @@ packages/
   core/              ← Models, enums, interfaces, utils, exceptions (no implementations)
   firebase_services/ ← Implements IAuthService, IFirestoreService, INotificationService from core
   cloudinary_service/← Implements IStorageService from core
+  local_storage/     ← Implements ISecureStorageService, ICacheService from core
   repositories/      ← Implements I*Repository interfaces from core
   providers/         ← Cubits (depend on core interfaces + firebase_auth)
   ui_kit/            ← Design tokens, theme, reusable widgets
@@ -27,7 +28,7 @@ packages/
 ## Dependency Chain
 
 ```
-core ← firebase_services, cloudinary_service, repositories, providers
+core ← firebase_services, cloudinary_service, local_storage, repositories, providers
 repositories ← core, firebase_auth
 providers ← core, firebase_auth
 ui_kit ← (standalone, only shimmer)
@@ -66,13 +67,16 @@ Run from repo root. No CI workflows exist yet.
 1. LoginScreen → enter phone → `verifyPhoneNumber()` → Firebase sends SMS
 2. `PhoneSubmitted` state (holds `verificationId`) → AppRouter shows OtpScreen
 3. OtpScreen → 6-digit input → auto-submits `submitOtp()` → `PhoneAuthProvider.credential()` → `signInWithCredential()`
-4. `authStateChanges` listener → `_loadUser()` from Firestore → `Authenticated` → HomeScreen
-5. Auto-verification on Android handled via `onCompleted` callback
+4. On success: JWT token saved to `flutter_secure_storage`, user profile cached in Hive
+5. `authStateChanges` listener → `_loadUser()` from Firestore → `Authenticated` → HomeScreen
+6. Auto-verification on Android handled via `onCompleted` callback
+7. On sign-out: token cleared from secure storage, user cache cleared from Hive
 
 ## Key Files
 
 - `plan.md` — Full architecture spec, Firestore schema, security rules, SOLID examples
 - `packages/core/lib/core.dart` — All exported interfaces and models
+- `packages/local_storage/lib/local_storage.dart` — SecureStorageService + HiveCacheService implementations
 - `apps/customer/lib/main.dart` — Working composition root example
 - `apps/customer/lib/config/env.dart` — Compile-time env vars (Firebase, Cloudinary, Maps)
 - `apps/customer/lib/config/firebase_options.dart` — Firebase config using Env constants

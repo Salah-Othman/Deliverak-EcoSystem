@@ -26,5 +26,17 @@ abstract class IAuthRepository {
     String? profileImage,
   });
 
+  Future<void> saveToken(String token);
+
+  Future<String?> getToken();
+
+  Future<void> clearToken();
+
+  Future<void> saveCachedUser(UserModel user);
+
+  Future<UserModel?> getCachedUser();
+
+  Future<void> clearCachedUser();
+
   Future<void> signOut();
 }
