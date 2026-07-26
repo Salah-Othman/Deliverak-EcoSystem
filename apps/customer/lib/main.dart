@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:core/core.dart';
 import 'package:firebase_services/firebase_services.dart';
+import 'package:cloudinary_service/cloudinary_service.dart';
 import 'package:repositories/repositories.dart';
 import 'package:providers/providers.dart';
 import 'package:ui_kit/ui_kit.dart';

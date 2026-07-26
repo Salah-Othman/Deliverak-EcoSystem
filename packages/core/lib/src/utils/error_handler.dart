@@ -1,4 +1,4 @@
-import 'exceptions/app_exception.dart';
+import '../exceptions/app_exception.dart';
 
 String mapExceptionToMessage(dynamic error) {
   if (error is AppException) {

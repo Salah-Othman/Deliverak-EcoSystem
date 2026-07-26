@@ -1,6 +1,8 @@
 name: providers
 description: "Cubit providers for Deliverak"
 version: 0.0.1
+publish_to: none
+resolution: workspace
 
 environment:
   sdk: ^3.11.5

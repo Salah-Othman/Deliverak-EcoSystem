@@ -1,6 +1,8 @@
 name: ui_kit
 description: "UI components and design tokens for Deliverak"
 version: 0.0.1
+publish_to: none
+resolution: workspace
 
 environment:
   sdk: ^3.11.5

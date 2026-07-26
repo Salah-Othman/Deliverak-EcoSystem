@@ -1,18 +1,22 @@
 import 'dart:io';
 
-import 'package:cloudinary/cloudinary.dart';
+import 'package:cloudinary_url_gen/cloudinary.dart' as url_gen;
 import 'package:core/core.dart';
 
 class CloudinaryService implements IStorageService {
-  late final Cloudinary _cloudinary;
+  late final Cloudinaryinary _cloudinaryApi;
+  late final url_gen.Cloudinary _cloudinaryUrl;
 
   CloudinaryService({
     required String cloudName,
     required String uploadPreset,
   }) {
-    _cloudinary = Cloudinary.usingEnvironment(
+    _cloudinaryApi = Cloudinaryinary(
       cloudName: cloudName,
       uploadPreset: uploadPreset,
+    );
+    _cloudinaryUrl = url_gen.Cloudinary.fromCloudName(
+      cloudName: cloudName,
     );
   }
 
@@ -23,12 +27,10 @@ class CloudinaryService implements IStorageService {
     Map<String, String>? metadata,
   }) async {
     final file = File(filePath);
-    final response = await _cloudinary.uploadFile(
-      CloudinaryFile.fromFile(
-        file.path,
-        folder: folder,
-        resourceType: CloudinaryResourceType.image,
-      ),
+    final response = await _cloudinaryApi.uploadFile(
+      file: file,
+      folder: folder,
+      resourceType: CloudinaryResourceType.image,
     );
 
     if (response.isSuccessful) {
@@ -46,7 +48,7 @@ class CloudinaryService implements IStorageService {
 
   @override
   Future<void> deleteFile(String publicId) async {
-    await _cloudinary.deleteFile(publicId);
+    await _cloudinaryApi.deleteFile(publicId: publicId);
   }
 
   @override
@@ -58,18 +60,15 @@ class CloudinaryService implements IStorageService {
     int? quality,
     String? format,
   }) {
-    final transformations = <String>[];
+    var image = _cloudinaryUrl.image(publicId: publicId);
 
-    if (width != null) transformations.add('w_$width');
-    if (height != null) transformations.add('h_$height');
-    if (crop != null) transformations.add('c_$crop');
-    if (quality != null) transformations.add('q_$quality');
-    if (format != null) transformations.add('f_$format');
+    if (width != null) image = image.resize(width: width);
+    if (height != null) image = image.resize(height: height);
+    if (crop != null) image = image.resize(crop: url_gen.Crop.values.firstWhere((e) => e.name == crop, orElse: () => url_gen.Crop.fill));
+    if (quality != null) image = image.quality(quality: quality);
+    if (format != null) image = image.format(url_gen.Format.values.firstWhere((e) => e.name == format, orElse: () => url_gen.Format.auto));
 
-    return _cloudinary.createUrl(
-      publicId: publicId,
-      transformation: transformations.isNotEmpty ? transformations.join(',') : null,
-    );
+    return image.toString();
   }
 
   @override

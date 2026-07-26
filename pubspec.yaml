@@ -1,0 +1,71 @@
+name: deliverak
+publish_to: none
+
+environment:
+  sdk: ^3.11.5
+
+workspace:
+  - apps/customer
+  - apps/driver
+  - apps/vendor
+  - apps/admin
+  - packages/core
+  - packages/firebase_services
+  - packages/cloudinary_service
+  - packages/repositories
+  - packages/providers
+  - packages/ui_kit
+
+dev_dependencies:
+  melos: ^8.2.2
+
+melos:
+  scripts:
+    analyze:
+      run: melos exec -- dart analyze --fatal-infos
+      package-filter: packages/*
+      description: Run dart analyze on all packages
+
+    test:
+      run: melos exec -- flutter test
+      package-filter: packages/*
+      description: Run tests across all packages
+
+    format:
+      run: melos exec -- dart format --set-exit-if-changed .
+      description: Format all Dart files
+
+    customer:android:
+      run: flutter run -d android
+      package-filter: apps/customer
+      description: Run customer app on Android
+
+    customer:ios:
+      run: flutter run -d ios
+      package-filter: apps/customer
+      description: Run customer app on iOS
+
+    driver:android:
+      run: flutter run -d android
+      package-filter: apps/driver
+      description: Run driver app on Android
+
+    driver:ios:
+      run: flutter run -d ios
+      package-filter: apps/driver
+      description: Run driver app on iOS
+
+    vendor:android:
+      run: flutter run -d android
+      package-filter: apps/vendor
+      description: Run vendor app on Android
+
+    vendor:ios:
+      run: flutter run -d ios
+      package-filter: apps/vendor
+      description: Run vendor app on iOS
+
+    admin:web:
+      run: flutter run -d chrome
+      package-filter: apps/admin
+      description: Run admin panel on web

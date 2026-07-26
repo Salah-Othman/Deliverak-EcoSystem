@@ -3,10 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 void main() {
-  test('adds one to input values', () {
-    final calculator = Calculator();
-    expect(calculator.addOne(2), 3);
-    expect(calculator.addOne(-7), -6);
-    expect(calculator.addOne(0), 1);
+  test('AppSpacing has correct values', () {
+    expect(AppSpacing.xs, 4.0);
+    expect(AppSpacing.sm, 8.0);
+    expect(AppSpacing.md, 16.0);
+    expect(AppSpacing.lg, 24.0);
+    expect(AppSpacing.xl, 32.0);
+    expect(AppSpacing.xxl, 48.0);
   });
 }
