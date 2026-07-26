@@ -5,6 +5,10 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../vendor_detail/presentation/screens/vendor_detail_screen.dart';
+import '../../../search/presentation/screens/search_screen.dart';
+import '../../../cart/presentation/screens/cart_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  DeliveryType? _selectedCategory;
 
   @override
   void initState() {
@@ -64,9 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return _buildHomeTab();
       case 1:
-        return const Center(child: Text('Search'));
+        return _buildSearchTab();
       case 2:
-        return const Center(child: Text('Cart'));
+        return _buildCartTab();
       case 3:
         return const Center(child: Text('Orders'));
       case 4:
@@ -77,6 +82,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
+    return Column(
+      children: [
+        _buildCategoryChips(),
+        Expanded(child: _buildVendorList()),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChips() {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        children: [
+          _CategoryChip(
+            label: 'All',
+            isSelected: _selectedCategory == null,
+            onTap: () {
+              setState(() => _selectedCategory = null);
+              context.read<VendorCubit>().loadVendors();
+            },
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          ...DeliveryType.values.map((type) => Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: _CategoryChip(
+                  label: type.displayName,
+                  isSelected: _selectedCategory == type,
+                  onTap: () {
+                    setState(() => _selectedCategory = type);
+                    context
+                        .read<VendorCubit>()
+                        .loadVendorsByCategory(type);
+                  },
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVendorList() {
     return BlocBuilder<VendorCubit, VendorState>(
       builder: (context, state) {
         if (state is VendorLoading) {
@@ -87,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
           return ErrorState(
             message: state.message,
             isRetryable: state.isRetryable,
-            onRetry: () => context.read<VendorCubit>().loadVendors(),
+            onRetry: () => context.read<VendorCubit>().loadVendors(
+                  category: _selectedCategory,
+                ),
           );
         }
 
@@ -105,63 +156,20 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: state.vendors.length,
             itemBuilder: (context, index) {
               final vendor = state.vendors[index];
-              return AppCard(
-                onTap: () {
-                },
-                child: Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey200,
-                        borderRadius: AppRadius.borderRadiusSm,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _VendorCard(
+                  vendor: vendor,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider.value(
+                          value: context.read<ProductCubit>(),
+                          child: VendorDetailScreen(vendor: vendor),
+                        ),
                       ),
-                      child: vendor.image.isNotEmpty
-                          ? Image.network(
-                              vendor.image,
-                              fit: BoxFit.cover,
-                            )
-                          : const Icon(
-                              Icons.store,
-                              color: AppColors.grey500,
-                            ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            vendor.name,
-                            style: AppTypography.titleMedium,
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            vendor.category.displayName,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.grey600,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                size: 16,
-                                color: AppColors.warning,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                Formatters.rating(vendor.rating),
-                                style: AppTypography.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               );
             },
@@ -170,6 +178,172 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return const SizedBox.shrink();
       },
+    );
+  }
+
+  Widget _buildSearchTab() {
+    return const SearchScreen();
+  }
+
+  Widget _buildCartTab() {
+    return const CartScreen();
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.white,
+          borderRadius: AppRadius.borderRadiusFull,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.grey300,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.labelLarge.copyWith(
+            color: isSelected ? AppColors.white : AppColors.grey700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VendorCard extends StatelessWidget {
+  final VendorModel vendor;
+  final VoidCallback onTap;
+
+  const _VendorCard({
+    required this.vendor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.grey200,
+              borderRadius: AppRadius.borderRadiusSm,
+            ),
+            child: vendor.image.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: AppRadius.borderRadiusSm,
+                    child: Image.network(
+                      vendor.image,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : const Icon(
+                    Icons.store,
+                    color: AppColors.grey500,
+                  ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        vendor.name,
+                        style: AppTypography.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (!vendor.isOpen)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorLight,
+                          borderRadius: AppRadius.borderRadiusSm,
+                        ),
+                        child: Text(
+                          'Closed',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  vendor.category.displayName,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.grey600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      size: 16,
+                      color: AppColors.warning,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      Formatters.rating(vendor.rating),
+                      style: AppTypography.bodyMedium,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 14,
+                      color: AppColors.grey500,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${vendor.totalOrders} orders',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.grey500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Icon(
+            Icons.chevron_right,
+            color: AppColors.grey400,
+          ),
+        ],
+      ),
     );
   }
 }
