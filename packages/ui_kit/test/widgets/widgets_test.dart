@@ -53,13 +53,12 @@ void main() {
     });
 
     testWidgets('button is disabled when isLoading', (tester) async {
-      var tapped = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: AppButton(
               label: 'Submit',
-              onPressed: () => tapped = true,
+              onPressed: () {},
               isLoading: true,
             ),
           ),

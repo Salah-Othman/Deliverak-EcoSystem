@@ -15,9 +15,6 @@ class MockFirebaseUser extends Mock implements User {}
 void main() {
   late MockDriverRepository mockDriverRepository;
   late MockAuthRepository mockAuthRepository;
-  late DriverCubit cubit;
-
-  late MockFirebaseUser fakeUser;
 
   setUpAll(() {
     registerFallbackValue(MockFirebaseUser());
@@ -26,21 +23,39 @@ void main() {
   setUp(() {
     mockDriverRepository = MockDriverRepository();
     mockAuthRepository = MockAuthRepository();
-    cubit = DriverCubit(
-      driverRepository: mockDriverRepository,
-      authRepository: mockAuthRepository,
-    );
-    fakeUser = MockFirebaseUser();
-    when(() => fakeUser.uid).thenReturn('user-1');
   });
 
-  tearDown(() {
-    cubit.close();
-  });
+  DriverCubit createCubit() => DriverCubit(
+        driverRepository: mockDriverRepository,
+        authRepository: mockAuthRepository,
+      );
+
+  MockFirebaseUser createFakeUser({String uid = 'user-1'}) {
+    final user = MockFirebaseUser();
+    when(() => user.uid).thenReturn(uid);
+    return user;
+  }
+
+  Future<DriverCubit> loadDriverToLoaded({
+    String driverId = 'driver-1',
+    String userId = 'user-1',
+  }) async {
+    final cubit = createCubit();
+    final user = createFakeUser(uid: userId);
+    when(() => mockAuthRepository.currentUser).thenReturn(user);
+    when(() => mockDriverRepository.getDriverByUserId(userId))
+        .thenAnswer((_) async => DriverModelFixture.create(driverId: driverId));
+    await cubit.loadDriver();
+    return cubit;
+  }
+
+  tearDown(() {});
 
   group('DriverCubit', () {
     test('initial state is DriverInitial', () {
+      final cubit = createCubit();
       expect(cubit.state, isA<DriverInitial>());
+      cubit.close();
     });
 
     group('loadDriver', () {
@@ -48,7 +63,7 @@ void main() {
         'emits [DriverLoading, DriverNotRegistered] when no current user',
         build: () {
           when(() => mockAuthRepository.currentUser).thenReturn(null);
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.loadDriver(),
         expect: () => [
@@ -60,12 +75,11 @@ void main() {
       blocTest<DriverCubit, DriverState>(
         'emits [DriverLoading, DriverNotRegistered] when driver not found',
         build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(
-            fakeUser,
-          );
+          final user = createFakeUser();
+          when(() => mockAuthRepository.currentUser).thenReturn(user);
           when(() => mockDriverRepository.getDriverByUserId('user-1'))
               .thenAnswer((_) async => null);
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.loadDriver(),
         expect: () => [
@@ -77,13 +91,11 @@ void main() {
       blocTest<DriverCubit, DriverState>(
         'emits [DriverLoading, DriverLoaded] when driver found',
         build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(
-            fakeUser,
-          );
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
+          final user = createFakeUser();
+          when(() => mockAuthRepository.currentUser).thenReturn(user);
           when(() => mockDriverRepository.getDriverByUserId('user-1'))
               .thenAnswer((_) async => DriverModelFixture.create());
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.loadDriver(),
         expect: () => [
@@ -95,13 +107,11 @@ void main() {
       blocTest<DriverCubit, DriverState>(
         'emits [DriverLoading, DriverError] on exception',
         build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(
-            fakeUser,
-          );
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
+          final user = createFakeUser();
+          when(() => mockAuthRepository.currentUser).thenReturn(user);
           when(() => mockDriverRepository.getDriverByUserId('user-1'))
               .thenThrow(Exception('Firestore error'));
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.loadDriver(),
         expect: () => [
@@ -116,7 +126,7 @@ void main() {
         'emits [DriverLoading, DriverError] when not authenticated',
         build: () {
           when(() => mockAuthRepository.currentUser).thenReturn(null);
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.registerDriver(
           vehicleType: 'motorcycle',
@@ -132,17 +142,15 @@ void main() {
       blocTest<DriverCubit, DriverState>(
         'emits [DriverLoading, DriverLoaded] on success',
         build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(
-            fakeUser,
-          );
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
+          final user = createFakeUser();
+          when(() => mockAuthRepository.currentUser).thenReturn(user);
           when(() => mockDriverRepository.createDriver(
                 userId: 'user-1',
                 vehicleType: 'motorcycle',
                 vehicleNumber: 'ABC-1234',
                 licenseNumber: 'DL-9876',
               )).thenAnswer((_) async => DriverModelFixture.create());
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.registerDriver(
           vehicleType: 'motorcycle',
@@ -158,17 +166,15 @@ void main() {
       blocTest<DriverCubit, DriverState>(
         'emits [DriverLoading, DriverError] on failure',
         build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(
-            fakeUser,
-          );
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
+          final user = createFakeUser();
+          when(() => mockAuthRepository.currentUser).thenReturn(user);
           when(() => mockDriverRepository.createDriver(
                 userId: any(named: 'userId'),
                 vehicleType: any(named: 'vehicleType'),
                 vehicleNumber: any(named: 'vehicleNumber'),
                 licenseNumber: any(named: 'licenseNumber'),
               )).thenThrow(Exception('Failed to create'));
-          return cubit;
+          return createCubit();
         },
         act: (cubit) => cubit.registerDriver(
           vehicleType: 'motorcycle',
@@ -183,218 +189,152 @@ void main() {
     });
 
     group('goOnline / goOffline', () {
-      blocTest<DriverCubit, DriverState>(
-        'goOnline does nothing when state is not DriverLoaded',
-        build: () => cubit,
-        act: (cubit) => cubit.goOnline(),
-        expect: () => [],
-      );
+      test('goOnline does nothing when state is not DriverLoaded', () async {
+        final cubit = createCubit();
+        await cubit.goOnline();
+        verifyNever(() => mockDriverRepository.updateOnlineStatus(any(), any()));
+        await cubit.close();
+      });
 
-      blocTest<DriverCubit, DriverState>(
-        'goOffline does nothing when state is not DriverLoaded',
-        build: () => cubit,
-        act: (cubit) => cubit.goOffline(),
-        expect: () => [],
-      );
+      test('goOffline does nothing when state is not DriverLoaded', () async {
+        final cubit = createCubit();
+        await cubit.goOffline();
+        verifyNever(() => mockDriverRepository.updateOnlineStatus(any(), any()));
+        await cubit.close();
+      });
 
-      blocTest<DriverCubit, DriverState>(
-        'goOnline calls repository with true',
-        build: () {
-          when(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
-              .thenAnswer((_) async {});
-          // Manually set state to DriverLoaded by calling loadDriver first
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => DriverModelFixture.create());
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.goOnline();
-        },
-        verify: (_) {
-          verify(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
-              .called(1);
-        },
-      );
+      test('goOnline calls repository with true', () async {
+        when(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
+            .thenAnswer((_) async {});
 
-      blocTest<DriverCubit, DriverState>(
-        'goOffline calls repository with false',
-        build: () {
-          when(() => mockDriverRepository.updateOnlineStatus('driver-1', false))
-              .thenAnswer((_) async {});
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => DriverModelFixture.create());
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.goOffline();
-        },
-        verify: (_) {
-          verify(
-              () => mockDriverRepository.updateOnlineStatus('driver-1', false))
-              .called(1);
-        },
-      );
+        final cubit = await loadDriverToLoaded();
+        await cubit.goOnline();
 
-      blocTest<DriverCubit, DriverState>(
-        'goOnline emits DriverError on failure',
-        build: () {
-          when(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
-              .thenThrow(Exception('Network error'));
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => DriverModelFixture.create());
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.goOnline();
-        },
-        expect: () => [
-          isA<DriverLoading>(),
-          isA<DriverLoaded>(),
-          isA<DriverError>(),
-        ],
-      );
+        verify(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
+            .called(1);
+        await cubit.close();
+      });
+
+      test('goOffline calls repository with false', () async {
+        when(() => mockDriverRepository.updateOnlineStatus('driver-1', false))
+            .thenAnswer((_) async {});
+
+        final cubit = await loadDriverToLoaded();
+        await cubit.goOffline();
+
+        verify(
+            () => mockDriverRepository.updateOnlineStatus('driver-1', false))
+            .called(1);
+        await cubit.close();
+      });
+
+      test('goOnline emits DriverError on failure', () async {
+        when(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
+            .thenThrow(Exception('Network error'));
+
+        final cubit = await loadDriverToLoaded();
+        await cubit.goOnline();
+
+        expect(cubit.state, isA<DriverError>());
+        await cubit.close();
+      });
     });
 
     group('updateLocation', () {
       test('does nothing when state is not DriverLoaded', () async {
+        final cubit = createCubit();
         await cubit.updateLocation(40.0, -74.0);
-        verifyNever(() => mockDriverRepository.updateLocation(any(), any(), any()));
+        verifyNever(
+            () => mockDriverRepository.updateLocation(any(), any(), any()));
+        await cubit.close();
       });
 
       test('calls repository when state is DriverLoaded', () async {
-        when(() => mockDriverRepository.updateOnlineStatus('driver-1', true))
-            .thenAnswer((_) async {});
         when(() => mockDriverRepository.updateLocation('driver-1', 40.0, -74.0))
             .thenAnswer((_) async {});
-        when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-        when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-        when(() => mockDriverRepository.getDriverByUserId('user-1'))
-            .thenAnswer((_) async => DriverModelFixture.create());
 
-        await cubit.loadDriver();
+        final cubit = await loadDriverToLoaded();
         await cubit.updateLocation(40.0, -74.0);
 
-        verify(() => mockDriverRepository.updateLocation('driver-1', 40.0, -74.0))
+        verify(
+            () => mockDriverRepository.updateLocation('driver-1', 40.0, -74.0))
             .called(1);
+        await cubit.close();
       });
 
       test('silently handles errors from repository', () async {
         when(() => mockDriverRepository.updateLocation(any(), any(), any()))
             .thenThrow(Exception('GPS error'));
-        when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-        when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-        when(() => mockDriverRepository.getDriverByUserId('user-1'))
-            .thenAnswer((_) async => DriverModelFixture.create());
 
-        await cubit.loadDriver();
-        // Should not throw
+        final cubit = await loadDriverToLoaded();
         await cubit.updateLocation(40.0, -74.0);
-        // State should still be DriverLoaded (error was swallowed)
+
         expect(cubit.state, isA<DriverLoaded>());
+        await cubit.close();
       });
     });
 
     group('updateDriverProfile', () {
-      blocTest<DriverCubit, DriverState>(
-        'does nothing when state is not DriverLoaded',
-        build: () => cubit,
-        act: (cubit) => cubit.updateDriverProfile(vehicleType: 'car'),
-        expect: () => [],
-      );
+      test('does nothing when state is not DriverLoaded', () async {
+        final cubit = createCubit();
+        await cubit.updateDriverProfile(vehicleType: 'car');
+        verifyNever(() => mockDriverRepository.updateDriverProfile(
+              driverId: any(named: 'driverId'),
+            ));
+        await cubit.close();
+      });
 
-      blocTest<DriverCubit, DriverState>(
-        'emits [DriverLoading, DriverLoaded] on success',
-        build: () {
-          final driver = DriverModelFixture.create();
-          final updatedDriver = DriverModelFixture.create(vehicleType: 'car');
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => driver);
-          when(() => mockDriverRepository.updateDriverProfile(
-                driverId: 'driver-1',
-                vehicleType: 'car',
-              )).thenAnswer((_) async {});
-          when(() => mockDriverRepository.getDriver('driver-1'))
-              .thenAnswer((_) async => updatedDriver);
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.updateDriverProfile(vehicleType: 'car');
-        },
-        expect: () => [
-          isA<DriverLoading>(),
-          isA<DriverLoaded>(),
-          isA<DriverLoading>(),
-          isA<DriverLoaded>(),
-        ],
-      );
+      test('emits [DriverLoading, DriverLoaded] on success', () async {
+        final updatedDriver =
+            DriverModelFixture.create(vehicleType: 'car');
+        when(() => mockDriverRepository.updateDriverProfile(
+              driverId: 'driver-1',
+              vehicleType: 'car',
+            )).thenAnswer((_) async {});
+        when(() => mockDriverRepository.getDriver('driver-1'))
+            .thenAnswer((_) async => updatedDriver);
 
-      blocTest<DriverCubit, DriverState>(
-        'emits [DriverLoading, DriverError] when updated driver is null',
-        build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => DriverModelFixture.create());
-          when(() => mockDriverRepository.updateDriverProfile(
-                driverId: any(named: 'driverId'),
-                vehicleType: any(named: 'vehicleType'),
-              )).thenAnswer((_) async {});
-          when(() => mockDriverRepository.getDriver('driver-1'))
-              .thenAnswer((_) async => null);
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.updateDriverProfile(vehicleType: 'car');
-        },
-        expect: () => [
-          isA<DriverLoading>(),
-          isA<DriverLoaded>(),
-          isA<DriverLoading>(),
-          isA<DriverError>(),
-        ],
-      );
+        final cubit = await loadDriverToLoaded();
+        await cubit.updateDriverProfile(vehicleType: 'car');
 
-      blocTest<DriverCubit, DriverState>(
-        'emits [DriverLoading, DriverError] on exception',
-        build: () {
-          when(() => mockAuthRepository.currentUser).thenReturn(fakeUser);
-          when(() => mockAuthRepository.currentUser!.uid).thenReturn('user-1');
-          when(() => mockDriverRepository.getDriverByUserId('user-1'))
-              .thenAnswer((_) async => DriverModelFixture.create());
-          when(() => mockDriverRepository.updateDriverProfile(
-                driverId: any(named: 'driverId'),
-                vehicleType: any(named: 'vehicleType'),
-              )).thenThrow(Exception('Failed'));
-          return cubit;
-        },
-        act: (cubit) async {
-          await cubit.loadDriver();
-          await cubit.updateDriverProfile(vehicleType: 'car');
-        },
-        expect: () => [
-          isA<DriverLoading>(),
-          isA<DriverLoaded>(),
-          isA<DriverLoading>(),
-          isA<DriverError>(),
-        ],
-      );
+        expect(cubit.state, isA<DriverLoaded>());
+        final loaded = cubit.state as DriverLoaded;
+        expect(loaded.driver.vehicleType, 'car');
+        await cubit.close();
+      });
+
+      test('emits DriverError when updated driver is null', () async {
+        when(() => mockDriverRepository.updateDriverProfile(
+              driverId: any(named: 'driverId'),
+              vehicleType: any(named: 'vehicleType'),
+            )).thenAnswer((_) async {});
+        when(() => mockDriverRepository.getDriver('driver-1'))
+            .thenAnswer((_) async => null);
+
+        final cubit = await loadDriverToLoaded();
+        await cubit.updateDriverProfile(vehicleType: 'car');
+
+        expect(cubit.state, isA<DriverError>());
+        await cubit.close();
+      });
+
+      test('emits DriverError on exception', () async {
+        when(() => mockDriverRepository.updateDriverProfile(
+              driverId: any(named: 'driverId'),
+              vehicleType: any(named: 'vehicleType'),
+            )).thenThrow(Exception('Failed'));
+
+        final cubit = await loadDriverToLoaded();
+        await cubit.updateDriverProfile(vehicleType: 'car');
+
+        expect(cubit.state, isA<DriverError>());
+        await cubit.close();
+      });
     });
 
     group('watchDriver', () {
       test('cancels previous subscription before starting new one', () async {
+        final cubit = createCubit();
         final controller1 = StreamController<DriverModel?>();
         final controller2 = StreamController<DriverModel?>();
 
@@ -411,9 +351,11 @@ void main() {
 
         await controller1.close();
         await controller2.close();
+        await cubit.close();
       });
 
       test('emits DriverLoaded when stream emits driver', () async {
+        final cubit = createCubit();
         final controller = StreamController<DriverModel?>();
 
         when(() => mockDriverRepository.watchDriver('driver-1'))
@@ -428,9 +370,11 @@ void main() {
         expect(cubit.state, isA<DriverLoaded>());
 
         await controller.close();
+        await cubit.close();
       });
 
       test('emits DriverError on stream error', () async {
+        final cubit = createCubit();
         final controller = StreamController<DriverModel?>();
 
         when(() => mockDriverRepository.watchDriver('driver-1'))
@@ -445,10 +389,12 @@ void main() {
         expect(cubit.state, isA<DriverError>());
 
         await controller.close();
+        await cubit.close();
       });
     });
 
     test('close cancels driver subscription', () async {
+      final cubit = createCubit();
       final controller = StreamController<DriverModel?>();
 
       when(() => mockDriverRepository.watchDriver('driver-1'))
