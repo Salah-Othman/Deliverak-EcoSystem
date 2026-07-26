@@ -4,11 +4,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:core/core.dart';
 import 'package:providers/providers.dart';
 
 import '../helpers/mock_repositories.dart';
-import '../helpers/test_models.dart';
 
 void main() {
   late MockAuthRepository mockAuthRepository;

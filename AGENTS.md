@@ -2,7 +2,7 @@
 
 ## Project State
 
-Early-stage Flutter monorepo. **Customer app** is the only app with real code. Driver, vendor, and admin are default Flutter scaffolds (not yet implemented).
+Early-stage Flutter monorepo. **Customer app** has real code. **Admin app** has full UI with Phase 6 features (auth, dashboard, users, vendors, orders). Driver, vendor apps are default Flutter scaffolds (not yet implemented).
 
 ## Monorepo Structure
 
