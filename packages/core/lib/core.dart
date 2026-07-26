@@ -28,6 +28,7 @@ export 'src/interfaces/secure_storage_service.dart';
 export 'src/interfaces/cache_service.dart';
 
 export 'src/interfaces/auth_repository.dart';
+export 'src/interfaces/user_repository.dart';
 export 'src/interfaces/vendor_repository.dart';
 export 'src/interfaces/product_repository.dart';
 export 'src/interfaces/order_repository.dart';

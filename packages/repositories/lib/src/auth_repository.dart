@@ -223,4 +223,67 @@ class AuthRepository implements IAuthRepository {
     await clearToken();
     await clearCachedUser();
   }
+
+  @override
+  Future<UserModel> signInWithEmail(String email, String password) async {
+    final userCredential = await _authService.signInWithEmail(email, password);
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw const AuthException(message: 'Failed to sign in');
+    }
+
+    final token = await user.getIdToken();
+    if (token != null) {
+      await saveToken(token);
+    }
+
+    final doc = await _firestoreService.getDocument(
+      collection: FirestorePaths.users,
+      documentId: user.uid,
+    );
+
+    if (doc.exists) {
+      final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
+      await saveCachedUser(userModel);
+      return userModel;
+    }
+
+    throw const AuthException(message: 'User not found');
+  }
+
+  @override
+  Future<UserModel> signUpWithEmail(String email, String password, {required String name}) async {
+    final userCredential = await _authService.signUpWithEmail(email, password);
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw const AuthException(message: 'Failed to create account');
+    }
+
+    final token = await user.getIdToken();
+    if (token != null) {
+      await saveToken(token);
+    }
+
+    final now = DateTime.now();
+    final newUser = UserModel(
+      uid: user.uid,
+      name: name,
+      email: email,
+      phone: '',
+      role: UserRole.admin,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await _firestoreService.setDocument(
+      collection: FirestorePaths.users,
+      documentId: user.uid,
+      data: newUser.toMap(),
+    );
+
+    await saveCachedUser(newUser);
+    return newUser;
+  }
 }

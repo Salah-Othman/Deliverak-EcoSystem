@@ -1,4 +1,5 @@
 export 'src/auth_repository.dart';
+export 'src/user_repository.dart';
 export 'src/vendor_repository.dart';
 export 'src/product_repository.dart';
 export 'src/order_repository.dart';

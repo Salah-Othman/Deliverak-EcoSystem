@@ -47,5 +47,9 @@ abstract class IAuthRepository {
 
   Future<void> clearCachedUser();
 
+  Future<UserModel> signInWithEmail(String email, String password);
+
+  Future<UserModel> signUpWithEmail(String email, String password, {required String name});
+
   Future<void> signOut();
 }
