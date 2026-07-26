@@ -15,38 +15,56 @@ class OrderDetailScreen extends StatefulWidget {
 }
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
+  late final OrderCubit _orderCubit;
+
   @override
   void initState() {
     super.initState();
-    context.read<OrderCubit>().watchOrder(widget.orderId);
+    _orderCubit = OrderCubit(
+      orderRepository: context.read<IOrderRepository>(),
+    )..watchOrder(widget.orderId);
+  }
+
+  @override
+  void dispose() {
+    _orderCubit.close();
+    super.dispose();
+  }
+
+  String _shortOrderId(String orderId) {
+    return orderId.substring(0, orderId.length.clamp(0, 8));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order Details'),
-      ),
-      body: BlocBuilder<OrderCubit, OrderState>(
-        builder: (context, state) {
-          if (state is OrderLoading) {
-            return const Center(child: AppLoader());
-          }
+    return BlocProvider.value(
+      value: _orderCubit,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Order Details'),
+        ),
+        body: BlocBuilder<OrderCubit, OrderState>(
+          builder: (context, state) {
+            if (state is OrderInitial || state is OrderLoading) {
+              return const Center(child: AppLoader());
+            }
 
-          if (state is OrderError) {
-            return ErrorState(
-              message: state.message,
-              isRetryable: state.isRetryable,
-              onRetry: () => context.read<OrderCubit>().watchOrder(widget.orderId),
-            );
-          }
+            if (state is OrderError) {
+              return ErrorState(
+                message: state.message,
+                isRetryable: state.isRetryable,
+                onRetry: () =>
+                    _orderCubit.watchOrder(widget.orderId),
+              );
+            }
 
-          if (state is OrderDetailLoaded) {
-            return _buildOrderDetail(state.order);
-          }
+            if (state is OrderDetailLoaded) {
+              return _buildOrderDetail(state.order);
+            }
 
-          return const Center(child: Text('Order not found'));
-        },
+            return const Center(child: Text('Order not found'));
+          },
+        ),
       ),
     );
   }
@@ -83,7 +101,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Order #${order.orderId.substring(0, 8)}',
+              'Order #${_shortOrderId(order.orderId)}',
               style: AppTypography.titleLarge,
             ),
             _buildStatusChip(order.status),
@@ -152,11 +170,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (isCancelled)
             Row(
               children: [
-                const Icon(Icons.cancel_outlined, color: AppColors.error, size: 24),
+                const Icon(Icons.cancel_outlined,
+                    color: AppColors.error, size: 24),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Order Cancelled',
-                  style: AppTypography.titleMedium.copyWith(color: AppColors.error),
+                  style: AppTypography.titleMedium
+                      .copyWith(color: AppColors.error),
                 ),
               ],
             )
@@ -187,7 +207,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ),
                         child: isCompleted
-                            ? const Icon(Icons.check, size: 14, color: AppColors.white)
+                            ? const Icon(Icons.check,
+                                size: 14, color: AppColors.white)
                             : isCurrent
                                 ? Container(
                                     margin: const EdgeInsets.all(6),
@@ -202,7 +223,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         Container(
                           width: 2,
                           height: 32,
-                          color: isCompleted ? AppColors.primary : AppColors.grey200,
+                          color: isCompleted
+                              ? AppColors.primary
+                              : AppColors.grey200,
                         ),
                     ],
                   ),
@@ -216,7 +239,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           color: isCompleted || isCurrent
                               ? AppColors.grey800
                               : AppColors.grey500,
-                          fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight:
+                              isCurrent ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -239,7 +263,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           child: Column(
             children: [
               ...order.items.map((item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -262,16 +287,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Subtotal', style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
-                  Text(Formatters.currency(order.totalAmount), style: AppTypography.bodyMedium),
+                  Text('Subtotal',
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: AppColors.grey600)),
+                  Text(Formatters.currency(order.totalAmount),
+                      style: AppTypography.bodyMedium),
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Delivery fee', style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
-                  Text(Formatters.currency(order.deliveryFee), style: AppTypography.bodyMedium),
+                  Text('Delivery fee',
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: AppColors.grey600)),
+                  Text(Formatters.currency(order.deliveryFee),
+                      style: AppTypography.bodyMedium),
                 ],
               ),
               const Divider(),
@@ -280,8 +311,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   Text('Total', style: AppTypography.titleMedium),
                   Text(
-                    Formatters.currency(order.totalAmount + order.deliveryFee),
-                    style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+                    Formatters.currency(
+                        order.totalAmount + order.deliveryFee),
+                    style: AppTypography.titleMedium
+                        .copyWith(color: AppColors.primary),
                   ),
                 ],
               ),
@@ -307,10 +340,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(order.deliveryAddress.name, style: AppTypography.titleMedium),
-                    Text(order.deliveryAddress.phone, style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
+                    Text(order.deliveryAddress.name,
+                        style: AppTypography.titleMedium),
+                    Text(order.deliveryAddress.phone,
+                        style: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.grey600)),
                     const SizedBox(height: AppSpacing.xs),
-                    Text(order.deliveryAddress.address, style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
+                    Text(order.deliveryAddress.address,
+                        style: AppTypography.bodyMedium
+                            .copyWith(color: AppColors.grey600)),
                   ],
                 ),
               ),
@@ -343,10 +381,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget _buildCancelButton(OrderModel order) {
     return BlocBuilder<OrderCubit, OrderState>(
       builder: (context, state) {
+        final isLoading = state is OrderLoading;
         return AppButton(
-          label: 'Cancel Order',
+          label: isLoading ? 'Cancelling...' : 'Cancel Order',
           isOutlined: true,
-          onPressed: () => _showCancelDialog(order),
+          isLoading: isLoading,
+          onPressed: isLoading ? null : () => _showCancelDialog(order),
         );
       },
     );

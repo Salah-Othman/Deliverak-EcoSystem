@@ -39,6 +39,51 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
     return products.where((p) => p.category == _selectedCategory).toList();
   }
 
+  void _addToCart(ProductModel product) {
+    final cartCubit = context.read<CartCubit>();
+    if (cartCubit.hasItemsFromDifferentVendor(widget.vendor.vendorId)) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Clear cart?'),
+          content: const Text(
+            'Your cart has items from another vendor. Adding this item will clear your current cart.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _addItemToCart(product);
+              },
+              child: const Text('Clear & Add'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _addItemToCart(product);
+    }
+  }
+
+  void _addItemToCart(ProductModel product) {
+    context.read<CartCubit>().addItem(
+          productId: product.productId,
+          vendorId: widget.vendor.vendorId,
+          name: product.name,
+          price: product.discountPrice ?? product.price,
+        );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product.name} added to cart'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -288,22 +333,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                     child: ProductCard(
                       product: product,
                       onAddToCart: product.isAvailable
-                          ? () {
-                              context.read<CartCubit>().addItem(
-                                    productId: product.productId,
-                                    vendorId: widget.vendor.vendorId,
-                                    name: product.name,
-                                    price: product.discountPrice ??
-                                        product.price,
-                                  );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content:
-                                      Text('${product.name} added to cart'),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            }
+                          ? () => _addToCart(product)
                           : null,
                     ),
                   );

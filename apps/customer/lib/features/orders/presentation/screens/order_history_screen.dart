@@ -18,21 +18,27 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadOrders();
+    _watchOrders();
   }
 
-  void _loadOrders() {
+  void _watchOrders() {
     final authState = context.read<AuthCubit>().state;
     if (authState is Authenticated) {
-      context.read<OrderCubit>().loadOrders(customerId: authState.user.uid);
+      context.read<OrderCubit>().watchOrders(
+            customerId: authState.user.uid,
+          );
     }
+  }
+
+  String _shortOrderId(String orderId) {
+    return orderId.substring(0, orderId.length.clamp(0, 8));
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OrderCubit, OrderState>(
       builder: (context, state) {
-        if (state is OrderLoading) {
+        if (state is OrderLoading || state is OrderInitial) {
           return const Center(child: AppLoader());
         }
 
@@ -40,7 +46,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           return ErrorState(
             message: state.message,
             isRetryable: state.isRetryable,
-            onRetry: _loadOrders,
+            onRetry: _watchOrders,
           );
         }
 
@@ -63,7 +69,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildOrderList(List<OrderModel> orders) {
     return RefreshIndicator(
-      onRefresh: () async => _loadOrders(),
+      onRefresh: () async {
+        final authState = context.read<AuthCubit>().state;
+        if (authState is Authenticated) {
+          await context.read<OrderCubit>().loadOrders(
+                customerId: authState.user.uid,
+              );
+        }
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: orders.length,
@@ -71,7 +84,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           final order = orders[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: _OrderCard(order: order),
+            child: _OrderCard(
+              order: order,
+              shortOrderId: _shortOrderId(order.orderId),
+            ),
           );
         },
       ),
@@ -81,8 +97,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
 class _OrderCard extends StatelessWidget {
   final OrderModel order;
+  final String shortOrderId;
 
-  const _OrderCard({required this.order});
+  const _OrderCard({
+    required this.order,
+    required this.shortOrderId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +121,7 @@ class _OrderCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Order #${order.orderId.substring(0, 8)}',
+                'Order #$shortOrderId',
                 style: AppTypography.titleMedium,
               ),
               _buildStatusChip(order.status),

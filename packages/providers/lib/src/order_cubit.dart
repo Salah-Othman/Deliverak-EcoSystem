@@ -147,7 +147,13 @@ class OrderCubit extends Cubit<OrderState> {
     );
   }
 
+  void unwatchOrder() {
+    _orderSubscription?.cancel();
+    _orderSubscription = null;
+  }
+
   Future<void> cancelOrder(String orderId) async {
+    emit(OrderLoading());
     try {
       await _orderRepository.updateOrderStatus(orderId, OrderStatus.cancelled);
     } catch (e) {

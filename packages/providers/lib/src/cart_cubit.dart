@@ -41,6 +41,11 @@ class CartCubit extends Cubit<CartState> {
   double get totalAmount => _items.fold(0, (sum, item) => sum + item.total);
   double get deliveryFee => _deliveryFee;
   double get grandTotal => totalAmount + deliveryFee;
+  bool get hasItems => _items.isNotEmpty;
+
+  bool hasItemsFromDifferentVendor(String vendorId) {
+    return _items.isNotEmpty && _vendorId != vendorId;
+  }
 
   void addItem({
     required String productId,
