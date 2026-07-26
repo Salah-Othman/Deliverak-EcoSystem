@@ -107,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
               final vendor = state.vendors[index];
               return AppCard(
                 onTap: () {
-                  // TODO: Navigate to vendor details
                 },
                 child: Row(
                   children: [

@@ -11,10 +11,13 @@ import 'package:ui_kit/ui_kit.dart';
 
 import 'app/app.dart';
 import 'config/env.dart';
+import 'config/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   final IAuthService authService = FirebaseAuthService();
   final IFirestoreService firestoreService = FirestoreService();
