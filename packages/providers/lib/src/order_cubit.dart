@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +16,15 @@ class OrderInitial extends OrderState {}
 
 class OrderLoading extends OrderState {}
 
+class OrderCreated extends OrderState {
+  final OrderModel order;
+
+  const OrderCreated(this.order);
+
+  @override
+  List<Object?> get props => [order];
+}
+
 class OrdersLoaded extends OrderState {
   final List<OrderModel> orders;
 
@@ -23,23 +34,32 @@ class OrdersLoaded extends OrderState {
   List<Object?> get props => [orders];
 }
 
+class OrderDetailLoaded extends OrderState {
+  final OrderModel order;
+
+  const OrderDetailLoaded(this.order);
+
+  @override
+  List<Object?> get props => [order];
+}
+
 class OrderError extends OrderState {
   final String message;
-  final String? code;
   final bool isRetryable;
 
   const OrderError({
     required this.message,
-    this.code,
     this.isRetryable = false,
   });
 
   @override
-  List<Object?> get props => [message, code, isRetryable];
+  List<Object?> get props => [message, isRetryable];
 }
 
 class OrderCubit extends Cubit<OrderState> {
   final IOrderRepository _orderRepository;
+  StreamSubscription<List<OrderModel>>? _ordersSubscription;
+  StreamSubscription<OrderModel?>? _orderSubscription;
 
   OrderCubit({required IOrderRepository orderRepository})
       : _orderRepository = orderRepository,
@@ -55,7 +75,7 @@ class OrderCubit extends Cubit<OrderState> {
   }) async {
     emit(OrderLoading());
     try {
-      await _orderRepository.createOrder(
+      final order = await _orderRepository.createOrder(
         customerId: customerId,
         vendorId: vendorId,
         items: items,
@@ -63,11 +83,11 @@ class OrderCubit extends Cubit<OrderState> {
         deliveryFee: deliveryFee,
         deliveryAddress: deliveryAddress,
       );
+      emit(OrderCreated(order));
     } catch (e) {
       emit(OrderError(
         message: mapExceptionToMessage(e),
-        code: e is AppException ? e.code : null,
-        isRetryable: e is AppException ? e.isRetryable : false,
+        isRetryable: isRetryableError(e),
       ));
     }
   }
@@ -101,28 +121,47 @@ class OrderCubit extends Cubit<OrderState> {
     String? driverId,
     OrderStatus? status,
   }) {
-    _orderRepository
+    _ordersSubscription?.cancel();
+    _ordersSubscription = _orderRepository
         .watchOrders(
           customerId: customerId,
           vendorId: vendorId,
           driverId: driverId,
           status: status,
         )
-        .listen((orders) {
-      emit(OrdersLoaded(orders));
-    }).onError((e) {
-      emit(OrderError(message: mapExceptionToMessage(e)));
-    });
+        .listen(
+      (orders) => emit(OrdersLoaded(orders)),
+      onError: (e) => emit(OrderError(message: mapExceptionToMessage(e))),
+    );
   }
 
-  Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
+  void watchOrder(String orderId) {
+    _orderSubscription?.cancel();
+    _orderSubscription = _orderRepository.watchOrder(orderId).listen(
+      (order) {
+        if (order != null) {
+          emit(OrderDetailLoaded(order));
+        }
+      },
+      onError: (e) => emit(OrderError(message: mapExceptionToMessage(e))),
+    );
+  }
+
+  Future<void> cancelOrder(String orderId) async {
     try {
-      await _orderRepository.updateOrderStatus(orderId, status);
+      await _orderRepository.updateOrderStatus(orderId, OrderStatus.cancelled);
     } catch (e) {
       emit(OrderError(
         message: mapExceptionToMessage(e),
         isRetryable: isRetryableError(e),
       ));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _ordersSubscription?.cancel();
+    _orderSubscription?.cancel();
+    return super.close();
   }
 }

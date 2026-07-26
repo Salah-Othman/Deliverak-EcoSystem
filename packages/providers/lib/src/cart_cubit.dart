@@ -16,34 +16,44 @@ class CartLoaded extends CartState {
   final List<OrderItem> items;
   final double totalAmount;
   final double deliveryFee;
+  final String vendorId;
 
   const CartLoaded({
     required this.items,
     required this.totalAmount,
     required this.deliveryFee,
+    required this.vendorId,
   });
 
   @override
-  List<Object?> get props => [items, totalAmount, deliveryFee];
+  List<Object?> get props => [items, totalAmount, deliveryFee, vendorId];
 }
 
 class CartCubit extends Cubit<CartState> {
   final List<OrderItem> _items = [];
+  String _vendorId = '';
   final double _deliveryFee = 2.99;
 
   CartCubit() : super(CartInitial());
 
   List<OrderItem> get items => List.unmodifiable(_items);
+  String get vendorId => _vendorId;
   double get totalAmount => _items.fold(0, (sum, item) => sum + item.total);
   double get deliveryFee => _deliveryFee;
   double get grandTotal => totalAmount + deliveryFee;
 
   void addItem({
     required String productId,
+    required String vendorId,
     required String name,
     required double price,
     int quantity = 1,
   }) {
+    if (_items.isNotEmpty && _vendorId != vendorId) {
+      _items.clear();
+    }
+    _vendorId = vendorId;
+
     final existingIndex = _items.indexWhere((item) => item.productId == productId);
 
     if (existingIndex >= 0) {
@@ -68,6 +78,7 @@ class CartCubit extends Cubit<CartState> {
 
   void removeItem(String productId) {
     _items.removeWhere((item) => item.productId == productId);
+    if (_items.isEmpty) _vendorId = '';
     _emitLoaded();
   }
 
@@ -92,7 +103,8 @@ class CartCubit extends Cubit<CartState> {
 
   void clearCart() {
     _items.clear();
-    emit(CartInitial());
+    _vendorId = '';
+    _emitLoaded();
   }
 
   void _emitLoaded() {
@@ -100,6 +112,7 @@ class CartCubit extends Cubit<CartState> {
       items: List.unmodifiable(_items),
       totalAmount: totalAmount,
       deliveryFee: deliveryFee,
+      vendorId: _vendorId,
     ));
   }
 }

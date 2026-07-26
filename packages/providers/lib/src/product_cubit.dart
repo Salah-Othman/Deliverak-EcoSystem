@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -38,6 +40,7 @@ class ProductError extends ProductState {
 
 class ProductCubit extends Cubit<ProductState> {
   final IProductRepository _productRepository;
+  StreamSubscription<List<ProductModel>>? _productsSubscription;
 
   ProductCubit({required IProductRepository productRepository})
       : _productRepository = productRepository,
@@ -65,10 +68,16 @@ class ProductCubit extends Cubit<ProductState> {
   }
 
   void watchProducts(String vendorId) {
-    _productRepository.watchProducts(vendorId).listen((products) {
-      emit(ProductsLoaded(products));
-    }).onError((e) {
-      emit(ProductError(message: mapExceptionToMessage(e)));
-    });
+    _productsSubscription?.cancel();
+    _productsSubscription = _productRepository.watchProducts(vendorId).listen(
+      (products) => emit(ProductsLoaded(products)),
+      onError: (e) => emit(ProductError(message: mapExceptionToMessage(e))),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _productsSubscription?.cancel();
+    return super.close();
   }
 }

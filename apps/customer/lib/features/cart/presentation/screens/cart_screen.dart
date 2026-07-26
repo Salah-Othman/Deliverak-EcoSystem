@@ -5,6 +5,8 @@ import 'package:core/core.dart';
 import 'package:ui_kit/ui_kit.dart';
 import 'package:providers/providers.dart';
 
+import '../../../checkout/presentation/screens/checkout_screen.dart';
+
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
@@ -129,7 +131,13 @@ class CartScreen extends StatelessWidget {
             AppButton(
               label: 'Place Order',
               onPressed: () {
-                // TODO: Navigate to checkout
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutScreen(
+                      vendorId: state.vendorId,
+                    ),
+                  ),
+                );
               },
             ),
           ],
@@ -149,6 +157,29 @@ class _CartItemCard extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onRemove,
   });
+
+  void _showRemoveConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove item'),
+        content: Text('Remove ${item.name} from cart?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onRemove();
+            },
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,8 +209,10 @@ class _CartItemCard extends StatelessWidget {
           Row(
             children: [
               _QuantityButton(
-                icon: Icons.remove,
-                onTap: () => onQuantityChanged(item.quantity - 1),
+                icon: item.quantity == 1 ? Icons.delete_outline : Icons.remove,
+                onTap: item.quantity == 1
+                    ? () => _showRemoveConfirmation(context)
+                    : () => onQuantityChanged(item.quantity - 1),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(

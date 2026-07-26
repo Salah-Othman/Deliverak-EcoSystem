@@ -8,6 +8,7 @@ import 'package:providers/providers.dart';
 import '../../../vendor_detail/presentation/screens/vendor_detail_screen.dart';
 import '../../../search/presentation/screens/search_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
+import '../../../orders/presentation/screens/order_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,25 +61,17 @@ class _HomeScreenState extends State<HomeScreen> {
           label: 'Profile',
         ),
       ],
-      body: _buildBody(),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildHomeTab(),
+          const SearchScreen(),
+          const CartScreen(),
+          const OrderHistoryScreen(),
+          const Center(child: Text('Profile')),
+        ],
+      ),
     );
-  }
-
-  Widget _buildBody() {
-    switch (_currentIndex) {
-      case 0:
-        return _buildHomeTab();
-      case 1:
-        return _buildSearchTab();
-      case 2:
-        return _buildCartTab();
-      case 3:
-        return const Center(child: Text('Orders'));
-      case 4:
-        return const Center(child: Text('Profile'));
-      default:
-        return _buildHomeTab();
-    }
   }
 
   Widget _buildHomeTab() {
@@ -98,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         children: [
-          _CategoryChip(
+          AppFilterChip(
             label: 'All',
             isSelected: _selectedCategory == null,
             onTap: () {
@@ -109,14 +102,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: AppSpacing.sm),
           ...DeliveryType.values.map((type) => Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: _CategoryChip(
+                child: AppFilterChip(
                   label: type.displayName,
                   isSelected: _selectedCategory == type,
                   onTap: () {
                     setState(() => _selectedCategory = type);
-                    context
-                        .read<VendorCubit>()
-                        .loadVendorsByCategory(type);
+                    context.read<VendorCubit>().loadVendorsByCategory(type);
                   },
                 ),
               )),
@@ -163,10 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => BlocProvider.value(
-                          value: context.read<ProductCubit>(),
-                          child: VendorDetailScreen(vendor: vendor),
-                        ),
+                        builder: (_) => VendorDetailScreen(vendor: vendor),
                       ),
                     );
                   },
@@ -178,53 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return const SizedBox.shrink();
       },
-    );
-  }
-
-  Widget _buildSearchTab() {
-    return const SearchScreen();
-  }
-
-  Widget _buildCartTab() {
-    return const CartScreen();
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.white,
-          borderRadius: AppRadius.borderRadiusFull,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey300,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.labelLarge.copyWith(
-            color: isSelected ? AppColors.white : AppColors.grey700,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -257,6 +198,10 @@ class _VendorCard extends StatelessWidget {
                     child: Image.network(
                       vendor.image,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.store,
+                        color: AppColors.grey500,
+                      ),
                     ),
                   )
                 : const Icon(
@@ -320,7 +265,7 @@ class _VendorCard extends StatelessWidget {
                       style: AppTypography.bodyMedium,
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Icon(
+                    const Icon(
                       Icons.shopping_bag_outlined,
                       size: 14,
                       color: AppColors.grey500,

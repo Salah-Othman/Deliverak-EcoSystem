@@ -12,3 +12,4 @@ export 'src/widgets/app_button.dart';
 export 'src/widgets/app_card.dart';
 export 'src/widgets/app_loader.dart';
 export 'src/widgets/app_dialog.dart';
+export 'src/widgets/app_filter_chip.dart';

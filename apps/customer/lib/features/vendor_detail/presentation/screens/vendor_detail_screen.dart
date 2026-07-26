@@ -18,31 +18,46 @@ class VendorDetailScreen extends StatefulWidget {
 
 class _VendorDetailScreenState extends State<VendorDetailScreen> {
   String? _selectedCategory;
+  late final ProductCubit _productCubit;
 
   @override
   void initState() {
     super.initState();
-    context.read<ProductCubit>().loadProducts(
-          vendorId: widget.vendor.vendorId,
-        );
+    _productCubit = ProductCubit(
+      productRepository: context.read<IProductRepository>(),
+    )..loadProducts(vendorId: widget.vendor.vendorId);
+  }
+
+  @override
+  void dispose() {
+    _productCubit.close();
+    super.dispose();
+  }
+
+  List<ProductModel> _filterProducts(List<ProductModel> products) {
+    if (_selectedCategory == null) return products;
+    return products.where((p) => p.category == _selectedCategory).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: _buildVendorInfo(),
-          ),
-          SliverToBoxAdapter(
-            child: _buildCategoryFilters(),
-          ),
-          _buildProductList(),
-        ],
+    return BlocProvider.value(
+      value: _productCubit,
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverToBoxAdapter(
+              child: _buildVendorInfo(),
+            ),
+            SliverToBoxAdapter(
+              child: _buildCategoryFilters(),
+            ),
+            _buildProductList(),
+          ],
+        ),
+        bottomNavigationBar: _buildCartBar(),
       ),
-      bottomNavigationBar: _buildCartBar(),
     );
   }
 
@@ -203,28 +218,21 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             children: [
-              _FilterChip(
+              AppFilterChip(
                 label: 'All',
                 isSelected: _selectedCategory == null,
                 onTap: () {
                   setState(() => _selectedCategory = null);
-                  context.read<ProductCubit>().loadProducts(
-                        vendorId: widget.vendor.vendorId,
-                      );
                 },
               ),
               const SizedBox(width: AppSpacing.sm),
               ...categories.map((cat) => Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: _FilterChip(
+                    child: AppFilterChip(
                       label: cat,
                       isSelected: _selectedCategory == cat,
                       onTap: () {
                         setState(() => _selectedCategory = cat);
-                        context.read<ProductCubit>().loadProducts(
-                              vendorId: widget.vendor.vendorId,
-                              category: cat,
-                            );
                       },
                     ),
                   )),
@@ -249,20 +257,22 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             child: ErrorState(
               message: state.message,
               isRetryable: state.isRetryable,
-              onRetry: () => context.read<ProductCubit>().loadProducts(
-                    vendorId: widget.vendor.vendorId,
-                  ),
+              onRetry: () => _productCubit.loadProducts(
+                vendorId: widget.vendor.vendorId,
+              ),
             ),
           );
         }
 
         if (state is ProductsLoaded) {
-          if (state.products.isEmpty) {
+          final filtered = _filterProducts(state.products);
+
+          if (filtered.isEmpty) {
             return const SliverFillRemaining(
               child: EmptyState(
                 icon: Icons.inventory_2_outlined,
-                title: 'No products yet',
-                subtitle: 'This vendor hasn\'t added any products',
+                title: 'No products found',
+                subtitle: 'Try selecting a different category',
               ),
             );
           }
@@ -272,7 +282,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final product = state.products[index];
+                  final product = filtered[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: ProductCard(
@@ -281,20 +291,16 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                           ? () {
                               context.read<CartCubit>().addItem(
                                     productId: product.productId,
+                                    vendorId: widget.vendor.vendorId,
                                     name: product.name,
-                                    price: product.discountPrice ?? product.price,
+                                    price: product.discountPrice ??
+                                        product.price,
                                   );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('${product.name} added to cart'),
+                                  content:
+                                      Text('${product.name} added to cart'),
                                   duration: const Duration(seconds: 1),
-                                  action: SnackBarAction(
-                                    label: 'View Cart',
-                                    textColor: AppColors.primary,
-                                    onPressed: () {
-                                      // Switch to cart tab
-                                    },
-                                  ),
                                 ),
                               );
                             }
@@ -302,7 +308,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                     ),
                   );
                 },
-                childCount: state.products.length,
+                childCount: filtered.length,
               ),
             ),
           );
@@ -337,51 +343,17 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
               label:
                   'View Cart (${state.items.length} items) - ${Formatters.currency(state.totalAmount + state.deliveryFee)}',
               onPressed: () {
-                // Switch to cart tab
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Switch to Cart tab to checkout'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
               },
             ),
           ),
         );
       },
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.white,
-          borderRadius: AppRadius.borderRadiusFull,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey300,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.labelMedium.copyWith(
-            color: isSelected ? AppColors.white : AppColors.grey700,
-          ),
-        ),
-      ),
     );
   }
 }

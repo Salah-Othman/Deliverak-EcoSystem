@@ -128,6 +128,11 @@ class DeliverakApp extends StatelessWidget {
               vendorRepository: context.read<IVendorRepository>(),
             ),
           ),
+          BlocProvider<SearchCubit>(
+            create: (context) => SearchCubit(
+              vendorRepository: context.read<IVendorRepository>(),
+            ),
+          ),
           BlocProvider<ProductCubit>(
             create: (context) => ProductCubit(
               productRepository: context.read<IProductRepository>(),

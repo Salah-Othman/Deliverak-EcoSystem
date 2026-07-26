@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -19,34 +17,16 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
-  Timer? _debounce;
-  bool _isSearching = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
-    _debounce?.cancel();
     super.dispose();
   }
 
   void _onSearchChanged(String query) {
-    _debounce?.cancel();
-    if (query.trim().isEmpty) {
-      setState(() {
-        _isSearching = false;
-      });
-      context.read<VendorCubit>().loadVendors();
-      return;
-    }
-
-    setState(() {
-      _isSearching = true;
-    });
-
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      context.read<VendorCubit>().searchVendors(query.trim());
-    });
+    context.read<SearchCubit>().search(query);
   }
 
   @override
@@ -85,45 +65,38 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildResults() {
-    if (!_isSearching) {
-      return _buildDefaultView();
-    }
-
-    return BlocBuilder<VendorCubit, VendorState>(
+    return BlocBuilder<SearchCubit, SearchState>(
       builder: (context, state) {
-        if (state is VendorLoading) {
+        if (state is SearchLoading) {
           return const AppShimmerList();
         }
 
-        if (state is VendorError) {
+        if (state is SearchError) {
           return ErrorState(
             message: state.message,
-            isRetryable: state.isRetryable,
-            onRetry: () => context.read<VendorCubit>().searchVendors(
-                  _searchController.text.trim(),
-                ),
+            isRetryable: true,
+            onRetry: () => context.read<SearchCubit>().search(state.query),
           );
         }
 
-        if (state is VendorsLoaded) {
-          if (state.vendors.isEmpty) {
-            return EmptyState(
-              icon: Icons.search_off,
-              title: 'No results found',
-              subtitle:
-                  'No vendors match "${_searchController.text.trim()}"',
-              actionLabel: 'Clear search',
-              onAction: () {
-                _searchController.clear();
-                _onSearchChanged('');
-              },
-            );
-          }
+        if (state is SearchEmpty) {
+          return EmptyState(
+            icon: Icons.search_off,
+            title: 'No results found',
+            subtitle: 'No vendors match "${state.query}"',
+            actionLabel: 'Clear search',
+            onAction: () {
+              _searchController.clear();
+              context.read<SearchCubit>().clear();
+            },
+          );
+        }
 
+        if (state is SearchResults) {
           return _buildSearchResults(state.vendors);
         }
 
-        return const SizedBox.shrink();
+        return _buildDefaultView();
       },
     );
   }
@@ -133,7 +106,7 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.search,
             size: 64,
             color: AppColors.grey300,
@@ -169,10 +142,7 @@ class _SearchScreenState extends State<SearchScreen> {
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ProductCubit>(),
-                    child: VendorDetailScreen(vendor: vendor),
-                  ),
+                  builder: (_) => VendorDetailScreen(vendor: vendor),
                 ),
               );
             },
@@ -191,6 +161,10 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Image.network(
                             vendor.image,
                             fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.store,
+                              color: AppColors.grey500,
+                            ),
                           ),
                         )
                       : const Icon(
