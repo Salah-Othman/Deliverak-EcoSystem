@@ -8,6 +8,39 @@ class DriverRepository implements IDriverRepository {
   }) : _firestoreService = firestoreService;
 
   @override
+  Future<DriverModel> createDriver({
+    required String userId,
+    required String vehicleType,
+    required String vehicleNumber,
+    required String licenseNumber,
+  }) async {
+    final now = DateTime.now();
+    final driverId = '${now.millisecondsSinceEpoch}_$userId';
+
+    final driver = DriverModel(
+      driverId: driverId,
+      userId: userId,
+      vehicleType: vehicleType,
+      vehicleNumber: vehicleNumber,
+      licenseNumber: licenseNumber,
+      isOnline: false,
+      currentLat: 0,
+      currentLng: 0,
+      rating: 0,
+      totalDeliveries: 0,
+      createdAt: now,
+    );
+
+    await _firestoreService.setDocument(
+      collection: FirestorePaths.drivers,
+      documentId: driverId,
+      data: driver.toMap(),
+    );
+
+    return driver;
+  }
+
+  @override
   Future<DriverModel?> getDriver(String driverId) async {
     final doc = await _firestoreService.getDocument(
       collection: FirestorePaths.drivers,
@@ -65,6 +98,28 @@ class DriverRepository implements IDriverRepository {
         'isOnline': isOnline,
       },
     );
+  }
+
+  @override
+  Future<void> updateDriverProfile({
+    required String driverId,
+    String? vehicleType,
+    String? vehicleNumber,
+    String? licenseNumber,
+  }) async {
+    final updates = <String, dynamic>{};
+
+    if (vehicleType != null) updates['vehicleType'] = vehicleType;
+    if (vehicleNumber != null) updates['vehicleNumber'] = vehicleNumber;
+    if (licenseNumber != null) updates['licenseNumber'] = licenseNumber;
+
+    if (updates.isNotEmpty) {
+      await _firestoreService.updateDocument(
+        collection: FirestorePaths.drivers,
+        documentId: driverId,
+        data: updates,
+      );
+    }
   }
 
   @override
