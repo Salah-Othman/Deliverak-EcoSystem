@@ -11,3 +11,5 @@ class MockOrderRepository extends Mock implements IOrderRepository {}
 
 class MockNotificationRepository extends Mock
     implements INotificationRepository {}
+
+class MockDriverRepository extends Mock implements IDriverRepository {}

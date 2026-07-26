@@ -45,3 +45,4 @@ app.*.map.json
 /android/app/release
 /firebase.json
 /node_modules
+/lib/firebase_options.dart

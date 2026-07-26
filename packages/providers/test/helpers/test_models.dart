@@ -158,6 +158,38 @@ class OrderModelFixture {
   }
 }
 
+class DriverModelFixture {
+  DriverModelFixture._();
+
+  static DriverModel create({
+    String driverId = 'driver-1',
+    String userId = 'user-1',
+    String vehicleType = 'motorcycle',
+    String vehicleNumber = 'ABC-1234',
+    String licenseNumber = 'DL-9876',
+    bool isOnline = false,
+    double currentLat = 40.7128,
+    double currentLng = -74.0060,
+    double rating = 4.5,
+    int totalDeliveries = 10,
+    DateTime? createdAt,
+  }) {
+    return DriverModel(
+      driverId: driverId,
+      userId: userId,
+      vehicleType: vehicleType,
+      vehicleNumber: vehicleNumber,
+      licenseNumber: licenseNumber,
+      isOnline: isOnline,
+      currentLat: currentLat,
+      currentLng: currentLng,
+      rating: rating,
+      totalDeliveries: totalDeliveries,
+      createdAt: createdAt ?? DateTime(2024),
+    );
+  }
+}
+
 class NotificationModelFixture {
   NotificationModelFixture._();
 

@@ -20,20 +20,20 @@ void main() {
     });
 
     testWidgets('calls onPressed when tapped', (tester) async {
-      var tapped = false;
+      var wasTapped = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: AppButton(
               label: 'Tap Me',
-              onPressed: () => tapped = true,
+              onPressed: () => wasTapped = true,
             ),
           ),
         ),
       );
 
       await tester.tap(find.text('Tap Me'));
-      expect(tapped, true);
+      expect(wasTapped, true);
     });
 
     testWidgets('shows loading indicator when isLoading', (tester) async {
