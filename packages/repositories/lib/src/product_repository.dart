@@ -35,20 +35,26 @@ class ProductRepository implements IProductRepository {
       }).toList();
     }
 
+    final conditions = <QueryCondition>[
+      QueryCondition(field: 'vendorId', value: vendorId),
+    ];
+    if (category != null) {
+      conditions.add(QueryCondition(field: 'category', value: category));
+    }
+    if (isAvailable != null) {
+      conditions.add(QueryCondition(field: 'isAvailable', value: isAvailable));
+    }
+
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.products,
+      where: conditions,
       orderBy: 'createdAt',
       descending: true,
     );
 
     final products = docs.docs
         .map((doc) => ProductModel.fromMap(doc.data() as Map<String, dynamic>))
-        .where((product) {
-      if (product.vendorId != vendorId) return false;
-      if (category != null && product.category != category) return false;
-      if (isAvailable != null && product.isAvailable != isAvailable) return false;
-      return true;
-    }).toList();
+        .toList();
 
     await _cacheService.put<String>(
       _kProductsBox,

@@ -37,8 +37,17 @@ class VendorRepository implements IVendorRepository {
       return list;
     }
 
+    final conditions = <QueryCondition>[];
+    if (category != null) {
+      conditions.add(QueryCondition(field: 'category', value: category.name));
+    }
+    if (isOpen != null) {
+      conditions.add(QueryCondition(field: 'isOpen', value: isOpen));
+    }
+
     final query = await _firestoreService.getDocuments(
       collection: FirestorePaths.vendors,
+      where: conditions.isNotEmpty ? conditions : null,
       orderBy: 'rating',
       descending: true,
       limit: limit,
@@ -46,11 +55,7 @@ class VendorRepository implements IVendorRepository {
 
     final vendors = query.docs
         .map((doc) => VendorModel.fromMap(doc.data() as Map<String, dynamic>))
-        .where((vendor) {
-      if (category != null && vendor.category != category) return false;
-      if (isOpen != null && vendor.isOpen != isOpen) return false;
-      return true;
-    }).toList();
+        .toList();
 
     await _cacheService.put<String>(
       _kVendorsBox,

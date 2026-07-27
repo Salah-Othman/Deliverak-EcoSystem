@@ -19,12 +19,6 @@ abstract class IAuthService {
 
   Future<UserCredential> signUpWithEmail(String email, String password);
 
-  Future<UserCredential> signInWithEmailAndPassword(
-      String email, String password);
-
-  Future<UserCredential> createUserWithEmailAndPassword(
-      String email, String password);
-
   Future<void> signOut();
 
   String? getPhoneNumber();

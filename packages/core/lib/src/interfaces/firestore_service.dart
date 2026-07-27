@@ -62,4 +62,12 @@ abstract class IFirestoreService {
     DocumentSnapshot? lastDocument,
     int limit = 20,
   });
+
+  Future<void> updateDocuments({
+    required String collection,
+    required List<String> documentIds,
+    required Map<String, dynamic> data,
+  });
+
+  String newDocumentId({required String collection});
 }

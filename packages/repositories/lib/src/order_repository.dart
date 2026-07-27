@@ -63,8 +63,9 @@ class OrderRepository implements IOrderRepository {
     }
 
     final now = DateTime.now();
-    final orderDocId =
-        '${now.millisecondsSinceEpoch}_${customerId.hashCode}';
+    final orderDocId = _firestoreService.newDocumentId(
+      collection: FirestorePaths.orders,
+    );
 
     final order = OrderModel(
       orderId: orderDocId,
@@ -114,21 +115,30 @@ class OrderRepository implements IOrderRepository {
       }).toList();
     }
 
+    final conditions = <QueryCondition>[];
+    if (customerId != null) {
+      conditions.add(QueryCondition(field: 'customerId', value: customerId));
+    }
+    if (vendorId != null) {
+      conditions.add(QueryCondition(field: 'vendorId', value: vendorId));
+    }
+    if (driverId != null) {
+      conditions.add(QueryCondition(field: 'driverId', value: driverId));
+    }
+    if (status != null) {
+      conditions.add(QueryCondition(field: 'status', value: status.name));
+    }
+
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.orders,
+      where: conditions.isNotEmpty ? conditions : null,
       orderBy: 'createdAt',
       descending: true,
     );
 
     final orders = docs.docs
         .map((doc) => OrderModel.fromMap(doc.data() as Map<String, dynamic>))
-        .where((order) {
-      if (customerId != null && order.customerId != customerId) return false;
-      if (vendorId != null && order.vendorId != vendorId) return false;
-      if (driverId != null && order.driverId != driverId) return false;
-      if (status != null && order.status != status) return false;
-      return true;
-    }).toList();
+        .toList();
 
     await _cacheService.put<String>(
       _kOrdersBox,

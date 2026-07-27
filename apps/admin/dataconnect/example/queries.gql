@@ -1,0 +1,134 @@
+mutation CreateUser($name: String!, $email: String!, $role: String!) @auth(level: USER) {
+  user_insert(data: {id_expr: "auth.uid", name: $name, email: $email, role: $role})
+}
+
+mutation UpdateUser($name: String, $phoneNumber: String) @auth(level: USER) {
+  user_update(key: {id_expr: "auth.uid"}, data: {name: $name, phoneNumber: $phoneNumber})
+}
+
+mutation DeleteUser @auth(level: USER) {
+  user_delete(key: {id_expr: "auth.uid"})
+}
+
+query GetUser @auth(level: USER) {
+  user(key: {id_expr: "auth.uid"}) {
+    name
+    email
+    role
+  }
+}
+
+query ListUsers @auth(level: PUBLIC, insecureReason: "Public list of users for directory") {
+  users {
+    name
+    role
+  }
+}
+
+mutation CreateVendor($name: String!, $address: String!, $category: String) @auth(level: USER) {
+  vendor_insert(data: {name: $name, address: $address, category: $category, ownerId_expr: "auth.uid"})
+}
+
+mutation UpdateVendor($id: UUID!, $address: String) @auth(level: USER) {
+  vendor_update(key: {id: $id}, data: {address: $address})
+}
+
+mutation DeleteVendor($id: UUID!) @auth(level: USER) {
+  vendor_delete(key: {id: $id})
+}
+
+query GetVendor($id: UUID!) @auth(level: PUBLIC, insecureReason: "Publicly visible vendor details") {
+  vendor(id: $id) {
+    name
+    address
+    owner { name }
+  }
+}
+
+query ListVendors @auth(level: PUBLIC, insecureReason: "Publicly searchable vendor list") {
+  vendors {
+    name
+    category
+  }
+}
+
+mutation CreateOrder($vendorId: UUID!, $status: String!, $totalAmount: Float) @auth(level: USER) {
+  order_insert(data: {customerId_expr: "auth.uid", vendorId: $vendorId, status: $status, totalAmount: $totalAmount})
+}
+
+mutation UpdateOrder($id: UUID!, $status: String!) @auth(level: USER) {
+  order_update(key: {id: $id}, data: {status: $status})
+}
+
+mutation DeleteOrder($id: UUID!) @auth(level: USER) {
+  order_delete(key: {id: $id})
+}
+
+query GetOrder($id: UUID!) @auth(level: USER) {
+  order(id: $id) {
+    status
+    totalAmount
+    vendor { name }
+  }
+}
+
+query ListMyOrders @auth(level: USER) {
+  orders(where: {customerId: {eq_expr: "auth.uid"}}) {
+    status
+    totalAmount
+  }
+}
+
+mutation CreateDelivery($orderId: UUID!, $status: String!) @auth(level: USER) {
+  delivery_insert(data: {orderId: $orderId, courierId_expr: "auth.uid", status: $status})
+}
+
+mutation UpdateDelivery($id: UUID!, $status: String!) @auth(level: USER) {
+  delivery_update(key: {id: $id}, data: {status: $status})
+}
+
+mutation DeleteDelivery($id: UUID!) @auth(level: USER) {
+  delivery_delete(key: {id: $id})
+}
+
+query GetDelivery($id: UUID!) @auth(level: USER) {
+  delivery(id: $id) {
+    status
+    estimatedArrival
+    order { id }
+  }
+}
+
+query ListDeliveries @auth(level: USER) {
+  deliveries(where: {courierId: {eq_expr: "auth.uid"}}) {
+    status
+    currentCoordinates
+  }
+}
+
+mutation CreateProduct($vendorId: UUID!, $name: String!, $price: Float!) @auth(level: USER) {
+  product_insert(data: {vendorId: $vendorId, name: $name, price: $price})
+}
+
+mutation UpdateProduct($id: UUID!, $price: Float!) @auth(level: USER) {
+  product_update(key: {id: $id}, data: {price: $price})
+}
+
+mutation DeleteProduct($id: UUID!) @auth(level: USER) {
+  product_delete(key: {id: $id})
+}
+
+query GetProduct($id: UUID!) @auth(level: PUBLIC, insecureReason: "Public product catalog") {
+  product(id: $id) {
+    name
+    price
+    vendor { name }
+  }
+}
+
+query ListProducts @auth(level: PUBLIC, insecureReason: "Public product catalog") {
+  products {
+    name
+    price
+  }
+}

@@ -12,6 +12,7 @@ workspace:
   - packages/core
   - packages/firebase_services
   - packages/cloudinary_service
+  - packages/local_storage
   - packages/repositories
   - packages/providers
   - packages/ui_kit

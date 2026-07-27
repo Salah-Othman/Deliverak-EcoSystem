@@ -1,0 +1,40 @@
+type User @table {
+  name: String!
+  email: String!
+  role: String!
+  phoneNumber: String
+  rating: Float
+}
+
+type Vendor @table {
+  name: String!
+  address: String!
+  owner: User!
+  category: String
+  businessHours: String
+}
+
+type Order @table {
+  customer: User!
+  vendor: Vendor!
+  status: String!
+  courier: User
+  totalAmount: Float
+  deliveryInstructions: String
+}
+
+type Delivery @table {
+  order: Order!
+  courier: User!
+  status: String!
+  currentCoordinates: String
+  estimatedArrival: Timestamp
+}
+
+type Product @table {
+  name: String!
+  price: Float!
+  vendor: Vendor!
+  description: String
+  imageUrl: String
+}

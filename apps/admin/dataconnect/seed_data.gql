@@ -1,0 +1,23 @@
+mutation CreateSeedData @transaction {
+  user_insertMany(data: [
+    { name: "Alice", email: "alice@example.com", role: "customer" },
+    { name: "Bob", email: "bob@example.com", role: "vendor" },
+    { name: "Charlie", email: "charlie@example.com", role: "courier" }
+  ])
+  vendor_insertMany(data: [
+    { name: "Burger Joint", address: "123 Main St", owner: { id_expr: "request.auth.uid" } },
+    { name: "Pizza Palace", address: "456 Oak St", owner: { id_expr: "request.auth.uid" } }
+  ])
+  product_insertMany(data: [
+    { name: "Cheeseburger", price: 9.99, vendor: { id_expr: "request.auth.uid" } },
+    { name: "Large Pepperoni", price: 15.50, vendor: { id_expr: "request.auth.uid" } }
+  ])
+  order_insertMany(data: [
+    { status: "Pending", totalAmount: 25.49, customer: { id_expr: "request.auth.uid" }, vendor: { id_expr: "request.auth.uid" } },
+    { status: "Delivered", totalAmount: 12.00, customer: { id_expr: "request.auth.uid" }, vendor: { id_expr: "request.auth.uid" } }
+  ])
+  delivery_insertMany(data: [
+    { status: "In Transit", order: { id_expr: "request.auth.uid" }, courier: { id_expr: "request.auth.uid" } },
+    { status: "Delivered", order: { id_expr: "request.auth.uid" }, courier: { id_expr: "request.auth.uid" } }
+  ])
+}

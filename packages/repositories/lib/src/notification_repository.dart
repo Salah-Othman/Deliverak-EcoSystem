@@ -26,6 +26,7 @@ class NotificationRepository implements INotificationRepository {
 
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.notifications,
+      where: [QueryCondition(field: 'userId', value: userId)],
       orderBy: 'createdAt',
       descending: true,
     );
@@ -33,7 +34,6 @@ class NotificationRepository implements INotificationRepository {
     final notifications = docs.docs
         .map((doc) =>
             NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
-        .where((notification) => notification.userId == userId)
         .toList();
 
     await _cacheService.put<String>(
@@ -50,6 +50,7 @@ class NotificationRepository implements INotificationRepository {
     return _firestoreService
         .watchDocuments(
           collection: FirestorePaths.notifications,
+          where: [QueryCondition(field: 'userId', value: userId)],
           orderBy: 'createdAt',
           descending: true,
         )
@@ -57,7 +58,6 @@ class NotificationRepository implements INotificationRepository {
       final notifications = snapshot.docs
           .map((doc) =>
               NotificationModel.fromMap(doc.data() as Map<String, dynamic>))
-          .where((notification) => notification.userId == userId)
           .toList();
 
       _cacheService.put<String>(
@@ -91,13 +91,12 @@ class NotificationRepository implements INotificationRepository {
       ],
     );
 
-    for (final doc in docs.docs) {
-      await _firestoreService.updateDocument(
+    if (docs.docs.isNotEmpty) {
+      final docIds = docs.docs.map((doc) => doc.id).toList();
+      await _firestoreService.updateDocuments(
         collection: FirestorePaths.notifications,
-        documentId: doc.id,
-        data: {
-          'isRead': true,
-        },
+        documentIds: docIds,
+        data: {'isRead': true},
       );
     }
 

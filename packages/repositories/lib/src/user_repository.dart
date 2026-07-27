@@ -8,15 +8,20 @@ class UserRepository implements IUserRepository {
 
   @override
   Future<List<UserModel>> getUsers({UserRole? role}) async {
+    final conditions = <QueryCondition>[];
+    if (role != null) {
+      conditions.add(QueryCondition(field: 'role', value: role.name));
+    }
+
     final docs = await _firestoreService.getDocuments(
       collection: FirestorePaths.users,
+      where: conditions.isNotEmpty ? conditions : null,
       orderBy: 'createdAt',
       descending: true,
     );
 
     return docs.docs
         .map((doc) => UserModel.fromMap(doc.data() as Map<String, dynamic>))
-        .where((user) => role == null || user.role == role)
         .toList();
   }
 
@@ -33,16 +38,21 @@ class UserRepository implements IUserRepository {
 
   @override
   Stream<List<UserModel>> watchUsers({UserRole? role}) {
+    final conditions = <QueryCondition>[];
+    if (role != null) {
+      conditions.add(QueryCondition(field: 'role', value: role.name));
+    }
+
     return _firestoreService
         .watchDocuments(
           collection: FirestorePaths.users,
+          where: conditions.isNotEmpty ? conditions : null,
           orderBy: 'createdAt',
           descending: true,
         )
         .map((snapshot) => snapshot.docs
             .map((doc) =>
                 UserModel.fromMap(doc.data() as Map<String, dynamic>))
-            .where((user) => role == null || user.role == role)
             .toList());
   }
 

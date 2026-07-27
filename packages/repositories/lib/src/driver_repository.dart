@@ -28,7 +28,9 @@ class DriverRepository implements IDriverRepository {
     }
 
     final now = DateTime.now();
-    final driverId = '${now.millisecondsSinceEpoch}_$userId';
+    final driverId = _firestoreService.newDocumentId(
+      collection: FirestorePaths.drivers,
+    );
 
     final driver = DriverModel(
       driverId: driverId,

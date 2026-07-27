@@ -74,6 +74,7 @@ class AuthRepository implements IAuthRepository {
     if (doc.exists) {
       final userModel = UserModel.fromMap(doc.data() as Map<String, dynamic>);
       await saveCachedUser(userModel);
+      startFcmTokenListener(user.uid);
       return userModel;
     }
 
@@ -102,7 +103,7 @@ class AuthRepository implements IAuthRepository {
   @override
   Future<UserModel> signInWithEmail(String email, String password) async {
     final userCredential =
-        await _authService.signInWithEmailAndPassword(email, password);
+        await _authService.signInWithEmail(email, password);
     final user = userCredential.user;
 
     if (user == null) {
@@ -152,7 +153,7 @@ class AuthRepository implements IAuthRepository {
   Future<UserModel> signUpWithEmail(String email, String password,
       {String? name}) async {
     final userCredential =
-        await _authService.createUserWithEmailAndPassword(email, password);
+        await _authService.signUpWithEmail(email, password);
     final user = userCredential.user;
 
     if (user == null) {

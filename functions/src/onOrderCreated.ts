@@ -10,7 +10,8 @@ export const onOrderCreated = functions.firestore
     const order = snapshot.data();
     if (!order) return;
 
-    const { vendorId, customerId, orderId } = order;
+    const orderId = context.params.orderId;
+    const { vendorId } = order;
 
     try {
       const vendorDoc = await db.collection("vendors").doc(vendorId).get();

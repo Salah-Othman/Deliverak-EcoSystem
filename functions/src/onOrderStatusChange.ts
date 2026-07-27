@@ -8,7 +8,7 @@ const STATUS_MESSAGES: Record<string, { title: string; bodyPrefix: string }> = {
   accepted: { title: "Order Accepted", bodyPrefix: "Your order has been accepted by the vendor" },
   preparing: { title: "Order Being Prepared", bodyPrefix: "Your order is now being prepared" },
   pickedUp: { title: "Ready for Pickup", bodyPrefix: "Your order is ready and waiting for driver pickup" },
-  in_transit: { title: "Out for Delivery", bodyPrefix: "Your order is on its way!" },
+  inTransit: { title: "Out for Delivery", bodyPrefix: "Your order is on its way!" },
   delivered: { title: "Order Delivered", bodyPrefix: "Your order has been delivered. Enjoy!" },
   cancelled: { title: "Order Cancelled", bodyPrefix: "Your order has been cancelled" },
 };
@@ -35,7 +35,11 @@ export const onOrderStatusChange = functions.firestore
       if (customerId) recipients.push(customerId);
 
       if (newStatus === "picked_up" && driverId) {
-        recipients.push(driverId);
+        const driverDoc = await db.collection("drivers").doc(driverId).get();
+        const driverData = driverDoc.data();
+        if (driverData?.userId) {
+          recipients.push(driverData.userId);
+        }
       }
 
       for (const userId of recipients) {
