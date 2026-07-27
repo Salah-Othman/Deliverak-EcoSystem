@@ -74,24 +74,35 @@ void main() {
     blocTest<ProductCubit, ProductState>(
       'loadMore appends products when more available',
       build: () {
+        var callCount = 0;
         when(() => mockProductRepository.getProductsPaginated(
               vendorId: any(named: 'vendorId'),
               category: any(named: 'category'),
               isAvailable: any(named: 'isAvailable'),
               lastDocument: any(named: 'lastDocument'),
               limit: any(named: 'limit'),
-            )).thenAnswer((_) async => PaginatedResult<ProductModel>(
-              items: [ProductModelFixture.create(productId: 'p2')],
+            )).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return PaginatedResult<ProductModel>(
+              items: [ProductModelFixture.create(productId: 'p1')],
               hasMore: true,
-            ));
+            );
+          }
+          return PaginatedResult<ProductModel>(
+            items: [ProductModelFixture.create(productId: 'p2')],
+            hasMore: true,
+          );
+        });
         return cubit;
       },
-      seed: () => ProductsLoaded(
-        products: [ProductModelFixture.create(productId: 'p1')],
-        hasMore: true,
-      ),
-      act: (cubit) => cubit.loadMore(),
+      act: (cubit) async {
+        await cubit.loadProducts(vendorId: 'v1');
+        cubit.loadMore();
+      },
       expect: () => [
+        isA<ProductLoading>(),
+        isA<ProductsLoaded>(),
         isA<ProductsLoaded>(),
         isA<ProductsLoaded>(),
       ],
@@ -104,13 +115,27 @@ void main() {
 
     blocTest<ProductCubit, ProductState>(
       'loadMore does nothing when hasMore is false',
-      build: () => cubit,
-      seed: () => ProductsLoaded(
-        products: [ProductModelFixture.create()],
-        hasMore: false,
-      ),
-      act: (cubit) => cubit.loadMore(),
-      expect: () => [],
+      build: () {
+        when(() => mockProductRepository.getProductsPaginated(
+              vendorId: any(named: 'vendorId'),
+              category: any(named: 'category'),
+              isAvailable: any(named: 'isAvailable'),
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<ProductModel>(
+              items: [ProductModelFixture.create()],
+              hasMore: false,
+            ));
+        return cubit;
+      },
+      act: (cubit) async {
+        await cubit.loadProducts(vendorId: 'v1');
+        cubit.loadMore();
+      },
+      expect: () => [
+        isA<ProductLoading>(),
+        isA<ProductsLoaded>(),
+      ],
     );
 
     blocTest<ProductCubit, ProductState>(

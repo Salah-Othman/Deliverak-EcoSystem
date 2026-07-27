@@ -157,13 +157,28 @@ void main() {
 
     blocTest<OrderCubit, OrderState>(
       'loadMore does nothing when hasMore is false',
-      build: () => cubit,
-      seed: () => OrdersLoaded(
-        orders: [OrderModelFixture.create()],
-        hasMore: false,
-      ),
-      act: (cubit) => cubit.loadMore(),
-      expect: () => [],
+      build: () {
+        when(() => mockOrderRepository.getOrdersPaginated(
+              customerId: any(named: 'customerId'),
+              vendorId: any(named: 'vendorId'),
+              driverId: any(named: 'driverId'),
+              status: any(named: 'status'),
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<OrderModel>(
+              items: [OrderModelFixture.create()],
+              hasMore: false,
+            ));
+        return cubit;
+      },
+      act: (cubit) async {
+        await cubit.loadOrders(customerId: 'c1');
+        cubit.loadMore();
+      },
+      expect: () => [
+        isA<OrderLoading>(),
+        isA<OrdersLoaded>(),
+      ],
     );
 
     test('close cancels both subscriptions', () async {

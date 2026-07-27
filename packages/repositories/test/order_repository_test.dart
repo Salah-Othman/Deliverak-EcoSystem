@@ -3,69 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-// ignore: depend_on_referenced_packages
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:core/core.dart';
 import 'package:repositories/repositories.dart';
 
-class MockFirestoreService extends Mock implements IFirestoreService {}
-
-class MockCacheService extends Mock implements ICacheService {}
-
-class FakeDocumentSnapshot extends Fake implements DocumentSnapshot {
-  final Map<String, dynamic> _data;
-  final bool _exists;
-  final String _id;
-
-  FakeDocumentSnapshot(this._data, {String? id, bool exists = true})
-      : _exists = exists,
-        _id = id ?? (_data['uid'] ?? 'unknown');
-
-  @override
-  bool get exists => _exists;
-
-  @override
-  Map<String, dynamic>? data() => _data;
-
-  @override
-  String get id => _id;
-}
-
-class FakeQueryDocumentSnapshot extends Fake
-    implements QueryDocumentSnapshot {
-  final Map<String, dynamic> _data;
-  final String _id;
-
-  FakeQueryDocumentSnapshot(this._data, {String? id})
-      : _id = id ?? (_data['uid'] ?? 'unknown');
-
-  @override
-  Map<String, dynamic> data() => _data;
-
-  @override
-  String get id => _id;
-
-  @override
-  bool get exists => true;
-}
-
-class FakeQuerySnapshot extends Fake implements QuerySnapshot {
-  final List<QueryDocumentSnapshot> _docs;
-
-  FakeQuerySnapshot(List<DocumentSnapshot> docs)
-      : _docs = docs
-            .map((d) => FakeQueryDocumentSnapshot(
-                  d.data() as Map<String, dynamic>,
-                  id: d.id,
-                ))
-            .toList();
-
-  @override
-  List<QueryDocumentSnapshot> get docs => _docs;
-
-  @override
-  int get size => _docs.length;
-}
+import 'helpers/firestore_test_helpers.dart';
 
 void main() {
   late MockFirestoreService mockFirestoreService;
@@ -132,6 +73,9 @@ void main() {
   group('OrderRepository', () {
     group('createOrder', () {
       test('creates order with pending status and cash payment', () async {
+        when(() => mockFirestoreService.newDocumentId(
+              collection: any(named: 'collection'),
+            )).thenReturn('generated-order-id');
         when(() => mockFirestoreService.setDocument(
               collection: any(named: 'collection'),
               documentId: any(named: 'documentId'),
@@ -144,7 +88,7 @@ void main() {
           customerId: 'c1',
           vendorId: 'v1',
           items: testItems(),
-          totalAmount: 20.0,
+          totalAmount: 25.0,
           deliveryFee: 5.0,
           deliveryAddress: testAddress(),
         );
@@ -153,7 +97,7 @@ void main() {
         expect(order.vendorId, 'v1');
         expect(order.status, OrderStatus.pending);
         expect(order.paymentMethod, 'cash');
-        expect(order.totalAmount, 20.0);
+        expect(order.totalAmount, 25.0);
         expect(order.deliveryFee, 5.0);
         verify(() => mockFirestoreService.setDocument(
               collection: FirestorePaths.orders,
@@ -172,6 +116,7 @@ void main() {
               collection: any(named: 'collection'),
               orderBy: any(named: 'orderBy'),
               descending: any(named: 'descending'),
+              where: any(named: 'where'),
             )).thenAnswer(
           (_) async => FakeQuerySnapshot([
             FakeDocumentSnapshot(orderMap(orderId: 'o1', customerId: 'c1'),
@@ -213,14 +158,13 @@ void main() {
             .thenReturn(null);
         when(() => mockFirestoreService.getDocuments(
               collection: any(named: 'collection'),
+              where: any(named: 'where'),
               orderBy: any(named: 'orderBy'),
               descending: any(named: 'descending'),
             )).thenAnswer(
           (_) async => FakeQuerySnapshot([
             FakeDocumentSnapshot(orderMap(orderId: 'o1', customerId: 'c1'),
                 id: 'o1'),
-            FakeDocumentSnapshot(orderMap(orderId: 'o2', customerId: 'c2'),
-                id: 'o2'),
             FakeDocumentSnapshot(orderMap(orderId: 'o3', customerId: 'c1'),
                 id: 'o3'),
           ]),
@@ -239,6 +183,7 @@ void main() {
             .thenReturn(null);
         when(() => mockFirestoreService.getDocuments(
               collection: any(named: 'collection'),
+              where: any(named: 'where'),
               orderBy: any(named: 'orderBy'),
               descending: any(named: 'descending'),
             )).thenAnswer(
@@ -246,9 +191,6 @@ void main() {
             FakeDocumentSnapshot(
                 orderMap(orderId: 'o1', status: 'pending'),
                 id: 'o1'),
-            FakeDocumentSnapshot(
-                orderMap(orderId: 'o2', status: 'delivered'),
-                id: 'o2'),
           ]),
         );
         when(() => mockCacheService.put<String>(any(), any(), any()))
