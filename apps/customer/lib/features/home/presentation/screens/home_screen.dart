@@ -218,16 +218,22 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
+          final isTablet = Breakpoints.isTabletOrWider(context);
+
           return PaginatedList(
             items: state.vendors,
             scrollController: _vendorScrollController,
             hasMore: state.hasMore,
             isLoadingMore: state.isLoadingMore,
             onLoadMore: () => context.read<VendorCubit>().loadMore(),
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.all(
+              isTablet ? AppSpacing.lg : AppSpacing.md,
+            ),
             itemBuilder: (context, vendor, index) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                padding: EdgeInsets.only(
+                  bottom: AppSpacing.sm,
+                ),
                 child: _VendorCard(
                   vendor: vendor,
                   onTap: () {

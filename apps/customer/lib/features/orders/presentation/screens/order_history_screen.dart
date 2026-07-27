@@ -72,6 +72,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final hasMore = currentState is OrdersLoaded ? currentState.hasMore : false;
     final isLoadingMore =
         currentState is OrdersLoaded ? currentState.isLoadingMore : false;
+    final isTablet = Breakpoints.isTabletOrWider(context);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -87,7 +88,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         hasMore: hasMore,
         isLoadingMore: isLoadingMore,
         onLoadMore: () => context.read<OrderCubit>().loadMore(),
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.all(
+          isTablet ? AppSpacing.lg : AppSpacing.md,
+        ),
         itemBuilder: (context, order, index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),

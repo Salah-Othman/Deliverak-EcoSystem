@@ -32,7 +32,6 @@
 | Local Cache | **hive** | Offline-first caching, fast key-value store for all entity data |
 | Animations | **Built-in Flutter + shimmer** | Skeleton loading, micro-interactions, page transitions |
 | Logging | **firebase_crashlytics** (optional) | Error tracking and crash reporting in production |
-| Monorepo | **Melos** | Manage multiple apps + shared packages |
 | Admin Panel | **Flutter Web** | Reuse shared code, same Dart ecosystem |
 
 ---

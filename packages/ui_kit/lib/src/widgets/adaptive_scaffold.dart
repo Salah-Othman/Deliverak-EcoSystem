@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../tokens/breakpoints.dart';
+
 class AdaptiveScaffold extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -20,12 +22,12 @@ class AdaptiveScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (screenWidth >= 600) {
+    if (Breakpoints.isDesktop(context)) {
+      return _buildDesktopLayout(context);
+    }
+    if (Breakpoints.isTablet(context)) {
       return _buildTabletLayout(context);
     }
-
     return _buildMobileLayout(context);
   }
 
@@ -34,13 +36,13 @@ class AdaptiveScaffold extends StatelessWidget {
       appBar: appBar,
       body: body,
       floatingActionButton: floatingActionButton,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: onTap,
-        items: items
-            .map((item) => BottomNavigationBarItem(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: onTap,
+        destinations: items
+            .map((item) => NavigationDestination(
                   icon: Icon(item.icon),
-                  activeIcon: Icon(item.activeIcon),
+                  selectedIcon: Icon(item.activeIcon),
                   label: item.label,
                 ))
             .toList(),
@@ -57,6 +59,32 @@ class AdaptiveScaffold extends StatelessWidget {
             selectedIndex: currentIndex,
             onDestinationSelected: onTap,
             labelType: NavigationRailLabelType.all,
+            destinations: items
+                .map((item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.activeIcon),
+                      label: Text(item.label),
+                    ))
+                .toList(),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(child: body),
+        ],
+      ),
+      floatingActionButton: floatingActionButton,
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Scaffold(
+      appBar: appBar,
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: currentIndex,
+            onDestinationSelected: onTap,
+            labelType: NavigationRailLabelType.all,
+            minWidth: 80,
             destinations: items
                 .map((item) => NavigationRailDestination(
                       icon: Icon(item.icon),

@@ -32,6 +32,45 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildCartContent(BuildContext context, CartLoaded state) {
+    final isTablet = Breakpoints.isTabletOrWider(context);
+
+    if (isTablet) {
+      return Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              itemCount: state.items.length,
+              itemBuilder: (context, index) {
+                final item = state.items[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: _CartItemCard(
+                    item: item,
+                    onQuantityChanged: (quantity) {
+                      context.read<CartCubit>().updateQuantity(
+                            item.productId,
+                            quantity,
+                          );
+                    },
+                    onRemove: () {
+                      context.read<CartCubit>().removeItem(item.productId);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          SizedBox(
+            width: 340,
+            child: _buildSummary(context, state),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Expanded(

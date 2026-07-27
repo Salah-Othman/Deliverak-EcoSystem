@@ -10,9 +10,31 @@ abstract class AppSpacing {
 
   static const double screenPaddingHorizontal = 16.0;
   static const double screenPaddingVertical = 24.0;
+  static const double screenPaddingHorizontalTablet = 32.0;
+  static const double screenPaddingVerticalTablet = 32.0;
   static const double cardPadding = 16.0;
   static const double listItemSpacing = 8.0;
   static const double sectionSpacing = 24.0;
+
+  static double responsiveHorizontal(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return screenPaddingHorizontalTablet;
+    if (width >= 600) return 24.0;
+    return screenPaddingHorizontal;
+  }
+
+  static double responsiveVertical(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 600) return screenPaddingVerticalTablet;
+    return screenPaddingVertical;
+  }
+
+  static EdgeInsets responsivePadding(BuildContext context) {
+    return EdgeInsets.symmetric(
+      horizontal: responsiveHorizontal(context),
+      vertical: responsiveVertical(context),
+    );
+  }
 }
 
 abstract class AppRadius {

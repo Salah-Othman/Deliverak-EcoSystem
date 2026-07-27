@@ -131,6 +131,25 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchResults(List<VendorModel> vendors) {
+    final isTablet = Breakpoints.isTabletOrWider(context);
+
+    if (isTablet) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 3,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
+        ),
+        itemCount: vendors.length,
+        itemBuilder: (context, index) {
+          final vendor = vendors[index];
+          return _buildVendorResultCard(vendor);
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       itemCount: vendors.length,
@@ -138,98 +157,103 @@ class _SearchScreenState extends State<SearchScreen> {
         final vendor = vendors[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: AppCard(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => VendorDetailScreen(vendor: vendor),
-                ),
-              );
-            },
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: AppColors.grey200,
-                    borderRadius: AppRadius.borderRadiusSm,
-                  ),
-                  child: vendor.image.isNotEmpty
-                      ? CachedImage(
-                          url: vendor.image,
-                          width: 60,
-                          height: 60,
-                          borderRadius: AppRadius.borderRadiusSm,
-                          errorWidget: const Icon(
-                            Icons.store,
-                            color: AppColors.grey500,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.store,
-                          color: AppColors.grey500,
-                        ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        vendor.name,
-                        style: AppTypography.titleMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        vendor.category.displayName,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.grey600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            size: 14,
-                            color: AppColors.warning,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            Formatters.rating(vendor.rating),
-                            style: AppTypography.caption,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (!vendor.isOpen)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.errorLight,
-                      borderRadius: AppRadius.borderRadiusSm,
-                    ),
-                    child: Text(
-                      'Closed',
-                      style: AppTypography.caption.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          child: _buildVendorResultCard(vendor),
+        );
+      },
+    );
+  }
+
+  Widget _buildVendorResultCard(VendorModel vendor) {
+    return AppCard(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VendorDetailScreen(vendor: vendor),
           ),
         );
       },
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: AppColors.grey200,
+              borderRadius: AppRadius.borderRadiusSm,
+            ),
+            child: vendor.image.isNotEmpty
+                ? CachedImage(
+                    url: vendor.image,
+                    width: 60,
+                    height: 60,
+                    borderRadius: AppRadius.borderRadiusSm,
+                    errorWidget: const Icon(
+                      Icons.store,
+                      color: AppColors.grey500,
+                    ),
+                  )
+                : const Icon(
+                    Icons.store,
+                    color: AppColors.grey500,
+                  ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  vendor.name,
+                  style: AppTypography.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  vendor.category.displayName,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.grey600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      size: 14,
+                      color: AppColors.warning,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      Formatters.rating(vendor.rating),
+                      style: AppTypography.caption,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (!vendor.isOpen)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: AppRadius.borderRadiusSm,
+              ),
+              child: Text(
+                'Closed',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -99,24 +99,56 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = Breakpoints.isTabletOrWider(context);
+
     return BlocProvider.value(
       value: _productCubit,
       child: Scaffold(
-        body: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            _buildSliverAppBar(),
-            SliverToBoxAdapter(
-              child: _buildVendorInfo(),
-            ),
-            SliverToBoxAdapter(
-              child: _buildCategoryFilters(),
-            ),
-            _buildProductList(),
-          ],
-        ),
+        body: isTablet
+            ? _buildTabletLayout()
+            : _buildMobileLayout(),
         bottomNavigationBar: _buildCartBar(),
       ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        _buildSliverAppBar(),
+        SliverToBoxAdapter(
+          child: _buildVendorInfo(),
+        ),
+        SliverToBoxAdapter(
+          child: _buildCategoryFilters(),
+        ),
+        _buildProductList(),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout() {
+    return Row(
+      children: [
+        SizedBox(
+          width: 360,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildVendorInfo(),
+              ),
+              SliverToBoxAdapter(
+                child: _buildCategoryFilters(),
+              ),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(
+          child: _buildProductGrid(),
+        ),
+      ],
     );
   }
 
@@ -372,6 +404,68 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
         }
 
         return const SliverFillRemaining(child: SizedBox.shrink());
+      },
+    );
+  }
+
+  Widget _buildProductGrid() {
+    return BlocBuilder<ProductCubit, ProductState>(
+      builder: (context, state) {
+        if (state is ProductLoading) {
+          return const Center(child: AppLoader());
+        }
+
+        if (state is ProductError) {
+          return ErrorState(
+            message: state.message,
+            isRetryable: state.isRetryable,
+            onRetry: () => _productCubit.loadProducts(
+              vendorId: widget.vendor.vendorId,
+            ),
+          );
+        }
+
+        if (state is ProductsLoaded) {
+          final filtered = _filterProducts(state.products);
+
+          if (filtered.isEmpty) {
+            return const EmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'No products found',
+              subtitle: 'Try selecting a different category',
+            );
+          }
+
+          return GridView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 2.5,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+            ),
+            itemCount: filtered.length + (state.hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == filtered.length) {
+                if (state.isLoadingMore) {
+                  return const Center(child: AppLoader(size: 24));
+                }
+                return const SizedBox.shrink();
+              }
+
+              final product = filtered[index];
+              return ProductCard(
+                product: product,
+                onAddToCart: product.isAvailable
+                    ? () => _addToCart(product)
+                    : null,
+              );
+            },
+          );
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }

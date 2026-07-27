@@ -70,6 +70,46 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildOrderDetail(OrderModel order) {
+    final isTablet = Breakpoints.isTabletOrWider(context);
+
+    if (isTablet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildOrderHeader(order),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildStatusStepper(order.status),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildDeliveryInfo(order),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildPaymentInfo(order),
+                  if (order.status.isActive) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildCancelButton(order),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            flex: 2,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: _buildOrderItems(order),
+            ),
+          ),
+        ],
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
