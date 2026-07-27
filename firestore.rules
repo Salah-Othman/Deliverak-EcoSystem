@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ── Helper functions ───────────────────────────────────
     function isSignedIn() {
       return request.auth != null;
     }
@@ -15,51 +15,77 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
+    // NOTE: get() on a missing doc causes rule denial (safe default).
+    // This protects against orphaned references (deleted vendor → products locked).
 
     function isVendorOwner(vendorId) {
       return isSignedIn() &&
         get(/databases/$(database)/documents/vendors/$(vendorId)).data.ownerId == request.auth.uid;
     }
 
+    function isValidRole(role) {
+      return role in ['customer', 'driver', 'vendor', 'admin'];
+    }
+
     // ── Users ──────────────────────────────────────────────
     match /users/{uid} {
-      // Anyone signed in can read profiles (for display names, ratings, etc.)
       allow read: if isSignedIn();
-      // Users can only write their own profile; admins can write any
-      allow create: if isAdmin() || request.auth.uid == uid;
-      allow update: if isOwnerOf(uid) || isAdmin();
+
+      // New users can only self-register as customer with required fields
+      allow create: if isSignedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'customer'
+        && request.resource.data.keys().hasAll(['name', 'phone', 'role', 'createdAt'])
+        && isValidRole(request.resource.data.role);
+
+      // Admins can update anything; owners cannot change their own role
+      allow update: if (isAdmin())
+        || (isOwnerOf(uid)
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+
       allow delete: if isAdmin();
     }
 
     // ── Vendors ────────────────────────────────────────────
     match /vendors/{vendorId} {
-      // Public read for browsing
       allow read: if true;
-      // Only the vendor owner or admin can create/update/delete
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.ownerId;
-      allow update: if isOwnerOf(resource.data.ownerId) || isAdmin();
-      allow delete: if isOwnerOf(resource.data.ownerId) || isAdmin();
+
+      // New vendors must be created closed, with required fields
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.ownerId
+        && request.resource.data.keys().hasAll(['name', 'category', 'ownerId', 'isOpen', 'location', 'address', 'createdAt'])
+        && request.resource.data.isOpen == false;
+
+      // Owners can update limited fields; admins can update anything
+      allow update: if (isAdmin())
+        || (isOwnerOf(resource.data.ownerId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['isOpen', 'name', 'description', 'image', 'address', 'location']));
+
+      allow delete: if isAdmin();
     }
 
     // ── Products ───────────────────────────────────────────
     match /products/{productId} {
-      // Public read for browsing
       allow read: if true;
-      // Only the vendor owner (looked up from the product's vendorId) or admin
-      allow create: if isSignedIn() &&
-        get(/databases/$(database)/documents/vendors/$(request.resource.data.vendorId)).data.ownerId == request.auth.uid;
-      allow update: if isSignedIn() &&
-        get(/databases/$(database)/documents/vendors/$(resource.data.vendorId)).data.ownerId == request.auth.uid;
-      allow delete: if isSignedIn() &&
-        get(/databases/$(database)/documents/vendors/$(resource.data.vendorId)).data.ownerId == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && get(/databases/$(database)/documents/vendors/$(request.resource.data.vendorId)).data.ownerId == request.auth.uid
+        && request.resource.data.keys().hasAll(['vendorId', 'name', 'price', 'isAvailable', 'createdAt'])
+        && request.resource.data.price > 0;
+
+      // Vendors can update limited fields on their products; admins can update anything
+      allow update: if (isAdmin())
+        || (isSignedIn()
+            && get(/databases/$(database)/documents/vendors/$(resource.data.vendorId)).data.ownerId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['name', 'description', 'price', 'discountPrice', 'images', 'category', 'isAvailable']));
+
+      allow delete: if isSignedIn()
+        && get(/databases/$(database)/documents/vendors/$(resource.data.vendorId)).data.ownerId == request.auth.uid;
     }
 
     // ── Orders ─────────────────────────────────────────────
     match /orders/{orderId} {
-      // Customer, assigned vendor, assigned driver, or admin can read
       allow read: if isSignedIn() && (
         request.auth.uid == resource.data.customerId ||
         isVendorOwner(resource.data.vendorId) ||
@@ -67,14 +93,35 @@ service cloud.firestore {
         isAdmin()
       );
 
-      // Any signed-in user can create an order (customer placing order)
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
+      // Customer places order — validate required fields and sane defaults
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.customerId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasAll([
+             'customerId', 'vendorId', 'items', 'totalAmount',
+             'deliveryFee', 'status', 'deliveryAddress', 'paymentMethod', 'createdAt'
+           ])
+        && request.resource.data.totalAmount > 0
+        && request.resource.data.items.size() > 0;
 
-      // Status updates: customer (cancel), vendor (accept/prepare), driver (pickedUp/inTransit/delivered), admin (any)
+      // Status-only updates: restrict which fields each role can change
       allow update: if isSignedIn() && (
-        request.auth.uid == resource.data.customerId ||
-        isVendorOwner(resource.data.vendorId) ||
-        request.auth.uid == resource.data.driverId ||
+        // Customer can only cancel their own order
+        (request.auth.uid == resource.data.customerId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status == 'cancelled')
+        ||
+        // Vendor can update status only
+        (isVendorOwner(resource.data.vendorId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status in ['accepted', 'preparing'])
+        ||
+        // Driver can update status only
+        (request.auth.uid == resource.data.driverId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status in ['picked_up', 'in_transit', 'delivered'])
+        ||
+        // Admin can update any field
         isAdmin()
       );
 
@@ -83,28 +130,33 @@ service cloud.firestore {
 
     // ── Drivers ────────────────────────────────────────────
     match /drivers/{driverId} {
-      // Public read for matching/assignment
       allow read: if true;
-      // Driver can create their own profile; admin can create any
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // Driver can update own profile; admin can update any
-      allow update: if isOwnerOf(resource.data.userId) || isAdmin();
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'vehicleType', 'isOnline', 'createdAt'])
+        && request.resource.data.isOnline == false;
+
+      // Drivers can only update location and online status; admins can update anything
+      allow update: if (isAdmin())
+        || (isOwnerOf(resource.data.userId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['currentLocation', 'isOnline', 'updatedAt']));
+
       allow delete: if isAdmin();
     }
 
     // ── Categories ─────────────────────────────────────────
     match /categories/{categoryId} {
-      // Public read for browsing
       allow read: if true;
-      // Only admin can manage categories
-      allow write: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ── Notifications ──────────────────────────────────────
     match /notifications/{notificationId} {
-      // Users can only read their own notifications
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      // Cloud Functions (admin SDK) writes these; clients mark as read
       allow create: if isAdmin();
       allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
       allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
