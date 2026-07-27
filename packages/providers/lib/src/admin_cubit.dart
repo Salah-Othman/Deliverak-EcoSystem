@@ -78,12 +78,12 @@ class AdminCubit extends Cubit<AdminState> {
   Future<void> loadDashboard() async {
     emit(AdminLoading());
     try {
-      final results = await Future.wait([
+      final results = await retryWithBackoff(() => Future.wait([
         _userRepository.getUsersCount(),
         _vendorRepository.getVendors(),
         _orderRepository.getOrders(),
         _driverRepository.getAvailableDrivers(),
-      ]);
+      ]));
 
       final totalUsers = results[0] as int;
       final vendors = results[1] as List<VendorModel>;

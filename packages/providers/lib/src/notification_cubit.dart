@@ -31,11 +31,17 @@ class NotificationsLoaded extends NotificationState {
 
 class NotificationError extends NotificationState {
   final String message;
+  final String? code;
+  final bool isRetryable;
 
-  const NotificationError({required this.message});
+  const NotificationError({
+    required this.message,
+    this.code,
+    this.isRetryable = false,
+  });
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, code, isRetryable];
 }
 
 class NotificationCubit extends Cubit<NotificationState> {
@@ -55,14 +61,18 @@ class NotificationCubit extends Cubit<NotificationState> {
   Future<void> loadNotifications(String userId) async {
     emit(NotificationLoading());
     try {
-      final notifications = await _notificationRepository.getNotifications(userId);
+      final notifications = await retryWithBackoff(() => _notificationRepository.getNotifications(userId));
       final unreadCount = await _notificationRepository.getUnreadCount(userId);
       emit(NotificationsLoaded(
         notifications: notifications,
         unreadCount: unreadCount,
       ));
     } catch (e) {
-      emit(NotificationError(message: mapExceptionToMessage(e)));
+      emit(NotificationError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: isRetryableError(e),
+      ));
     }
   }
 
@@ -80,7 +90,11 @@ class NotificationCubit extends Cubit<NotificationState> {
         });
       },
       onError: (e) {
-        emit(NotificationError(message: mapExceptionToMessage(e)));
+        emit(NotificationError(
+          message: mapExceptionToMessage(e),
+          code: e is AppException ? e.code : null,
+          isRetryable: isRetryableError(e),
+        ));
       },
     );
   }
@@ -90,7 +104,11 @@ class NotificationCubit extends Cubit<NotificationState> {
       await _notificationRepository.markAsRead(notificationId);
       await loadNotifications(userId);
     } catch (e) {
-      emit(NotificationError(message: mapExceptionToMessage(e)));
+      emit(NotificationError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: isRetryableError(e),
+      ));
     }
   }
 
@@ -99,7 +117,11 @@ class NotificationCubit extends Cubit<NotificationState> {
       await _notificationRepository.markAllAsRead(userId);
       await loadNotifications(userId);
     } catch (e) {
-      emit(NotificationError(message: mapExceptionToMessage(e)));
+      emit(NotificationError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: isRetryableError(e),
+      ));
     }
   }
 }

@@ -47,6 +47,16 @@ class ErrorState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            if (code != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Error code: $code',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.grey400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             if (isRetryable && onRetry != null) ...[
               const SizedBox(height: AppSpacing.lg),
               ElevatedButton.icon(

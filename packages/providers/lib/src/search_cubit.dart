@@ -38,11 +38,18 @@ class SearchEmpty extends SearchState {
 class SearchError extends SearchState {
   final String message;
   final String query;
+  final String? code;
+  final bool isRetryable;
 
-  const SearchError({required this.message, required this.query});
+  const SearchError({
+    required this.message,
+    required this.query,
+    this.code,
+    this.isRetryable = false,
+  });
 
   @override
-  List<Object?> get props => [message, query];
+  List<Object?> get props => [message, query, code, isRetryable];
 }
 
 class SearchCubit extends Cubit<SearchState> {
@@ -63,7 +70,7 @@ class SearchCubit extends Cubit<SearchState> {
     _debounce = Timer(const Duration(milliseconds: 500), () async {
       emit(SearchLoading());
       try {
-        final vendors = await _vendorRepository.searchVendors(query.trim());
+        final vendors = await retryWithBackoff(() => _vendorRepository.searchVendors(query.trim()));
         if (vendors.isEmpty) {
           emit(SearchEmpty(query: query.trim()));
         } else {
@@ -73,6 +80,8 @@ class SearchCubit extends Cubit<SearchState> {
         emit(SearchError(
           message: mapExceptionToMessage(e),
           query: query.trim(),
+          code: e is AppException ? e.code : null,
+          isRetryable: isRetryableError(e),
         ));
       }
     });

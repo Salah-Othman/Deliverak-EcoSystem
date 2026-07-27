@@ -13,3 +13,4 @@ export 'src/vendor_profile_cubit.dart';
 export 'src/admin_cubit.dart';
 export 'src/admin_user_cubit.dart';
 export 'src/admin_auth_cubit.dart';
+export 'src/connectivity_cubit.dart';

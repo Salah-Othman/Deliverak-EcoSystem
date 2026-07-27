@@ -202,6 +202,9 @@ class _DeliverakAppState extends State<DeliverakApp> {
               notificationRepository: context.read<INotificationRepository>(),
             ),
           ),
+          BlocProvider<ConnectivityCubit>(
+            create: (_) => ConnectivityCubit()..init(),
+          ),
         ],
         child: MaterialApp(
           title: 'Deliverak',
@@ -210,6 +213,20 @@ class _DeliverakAppState extends State<DeliverakApp> {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.system,
+          builder: (context, child) {
+            return Column(
+              children: [
+                BlocBuilder<ConnectivityCubit, ConnectivityState>(
+                  builder: (context, state) {
+                    return OfflineBanner(
+                      isOnline: state is ConnectivityOnline,
+                    );
+                  },
+                ),
+                Expanded(child: child ?? const SizedBox.shrink()),
+              ],
+            );
+          },
           home: const AppRouter(),
         ),
       ),

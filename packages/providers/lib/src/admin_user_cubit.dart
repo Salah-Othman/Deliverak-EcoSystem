@@ -28,11 +28,17 @@ class AdminUsersLoaded extends AdminUserState {
 
 class AdminUserError extends AdminUserState {
   final String message;
+  final String? code;
+  final bool isRetryable;
 
-  const AdminUserError({required this.message});
+  const AdminUserError({
+    required this.message,
+    this.code,
+    this.isRetryable = false,
+  });
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, code, isRetryable];
 }
 
 class AdminUserCubit extends Cubit<AdminUserState> {
@@ -52,10 +58,14 @@ class AdminUserCubit extends Cubit<AdminUserState> {
   Future<void> loadUsers({UserRole? role}) async {
     emit(AdminUserLoading());
     try {
-      final users = await _userRepository.getUsers(role: role);
+      final users = await retryWithBackoff(() => _userRepository.getUsers(role: role));
       emit(AdminUsersLoaded(users: users, filter: role));
     } catch (e) {
-      emit(AdminUserError(message: mapExceptionToMessage(e)));
+      emit(AdminUserError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: isRetryableError(e),
+      ));
     }
   }
 
@@ -63,8 +73,11 @@ class AdminUserCubit extends Cubit<AdminUserState> {
     _usersSubscription?.cancel();
     _usersSubscription = _userRepository.watchUsers(role: role).listen(
       (users) => emit(AdminUsersLoaded(users: users, filter: role)),
-      onError: (e) =>
-          emit(AdminUserError(message: mapExceptionToMessage(e))),
+      onError: (e) => emit(AdminUserError(
+        message: mapExceptionToMessage(e),
+        code: e is AppException ? e.code : null,
+        isRetryable: isRetryableError(e),
+      )),
     );
   }
 }

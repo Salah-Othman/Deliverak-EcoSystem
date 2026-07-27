@@ -30,15 +30,17 @@ class OrdersLoaded extends OrderState {
   final List<OrderModel> orders;
   final bool hasMore;
   final bool isLoadingMore;
+  final String? loadMoreError;
 
   const OrdersLoaded({
     required this.orders,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   @override
-  List<Object?> get props => [orders, hasMore, isLoadingMore];
+  List<Object?> get props => [orders, hasMore, isLoadingMore, loadMoreError];
 }
 
 class OrderDetailLoaded extends OrderState {
@@ -122,13 +124,13 @@ class OrderCubit extends Cubit<OrderState> {
     _hasMore = true;
 
     try {
-      final result = await _orderRepository.getOrdersPaginated(
+      final result = await retryWithBackoff(() => _orderRepository.getOrdersPaginated(
         customerId: customerId,
         vendorId: vendorId,
         driverId: driverId,
         status: status,
         limit: _pageSize,
-      );
+      ));
       _lastDocument = result.lastDocument;
       _hasMore = result.hasMore;
       emit(OrdersLoaded(
@@ -175,6 +177,7 @@ class OrderCubit extends Cubit<OrderState> {
       emit(OrdersLoaded(
         orders: currentState.orders,
         hasMore: _hasMore,
+        loadMoreError: mapExceptionToMessage(e),
       ));
     } finally {
       _isLoadingMore = false;

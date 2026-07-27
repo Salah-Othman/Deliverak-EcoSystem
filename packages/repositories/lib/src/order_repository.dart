@@ -41,7 +41,7 @@ class OrderRepository implements IOrderRepository {
         throw const ValidationException(message: 'Item price cannot be negative');
       }
     }
-    final itemsTotal = items.fold<double>(0, (sum, item) => sum + item.price * item.quantity);
+    final itemsTotal = items.fold<double>(0, (total, item) => total + item.price * item.quantity);
     final expectedTotal = itemsTotal + deliveryFee;
     if ((totalAmount - expectedTotal).abs() > 0.01) {
       throw const ValidationException(message: 'Order total does not match items total plus delivery fee');

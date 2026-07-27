@@ -19,15 +19,17 @@ class VendorsLoaded extends VendorState {
   final List<VendorModel> vendors;
   final bool hasMore;
   final bool isLoadingMore;
+  final String? loadMoreError;
 
   const VendorsLoaded({
     required this.vendors,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   @override
-  List<Object?> get props => [vendors, hasMore, isLoadingMore];
+  List<Object?> get props => [vendors, hasMore, isLoadingMore, loadMoreError];
 }
 
 class VendorError extends VendorState {
@@ -67,11 +69,11 @@ class VendorCubit extends Cubit<VendorState> {
     _hasMore = true;
 
     try {
-      final result = await _vendorRepository.getVendorsPaginated(
+      final result = await retryWithBackoff(() => _vendorRepository.getVendorsPaginated(
         category: category,
         isOpen: isOpen,
         limit: _pageSize,
-      );
+      ));
       _lastDocument = result.lastDocument;
       _hasMore = result.hasMore;
       emit(VendorsLoaded(
@@ -116,6 +118,7 @@ class VendorCubit extends Cubit<VendorState> {
       emit(VendorsLoaded(
         vendors: currentState.vendors,
         hasMore: _hasMore,
+        loadMoreError: mapExceptionToMessage(e),
       ));
     } finally {
       _isLoadingMore = false;

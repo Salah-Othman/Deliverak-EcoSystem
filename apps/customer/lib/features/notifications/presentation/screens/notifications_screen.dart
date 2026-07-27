@@ -63,6 +63,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (state is NotificationError) {
             return ErrorState(
               message: state.message,
+              code: state.code,
+              isRetryable: state.isRetryable,
               onRetry: _loadNotifications,
             );
           }

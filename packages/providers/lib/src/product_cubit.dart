@@ -21,15 +21,17 @@ class ProductsLoaded extends ProductState {
   final List<ProductModel> products;
   final bool hasMore;
   final bool isLoadingMore;
+  final String? loadMoreError;
 
   const ProductsLoaded({
     required this.products,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   @override
-  List<Object?> get props => [products, hasMore, isLoadingMore];
+  List<Object?> get props => [products, hasMore, isLoadingMore, loadMoreError];
 }
 
 class ProductError extends ProductState {
@@ -73,12 +75,12 @@ class ProductCubit extends Cubit<ProductState> {
     _hasMore = true;
 
     try {
-      final result = await _productRepository.getProductsPaginated(
+      final result = await retryWithBackoff(() => _productRepository.getProductsPaginated(
         vendorId: vendorId,
         category: category,
         isAvailable: isAvailable,
         limit: _pageSize,
-      );
+      ));
       _lastDocument = result.lastDocument;
       _hasMore = result.hasMore;
       emit(ProductsLoaded(
@@ -124,6 +126,7 @@ class ProductCubit extends Cubit<ProductState> {
       emit(ProductsLoaded(
         products: currentState.products,
         hasMore: _hasMore,
+        loadMoreError: mapExceptionToMessage(e),
       ));
     } finally {
       _isLoadingMore = false;
