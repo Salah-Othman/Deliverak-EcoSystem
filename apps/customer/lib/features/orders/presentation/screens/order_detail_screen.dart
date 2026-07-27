@@ -150,7 +150,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         const SizedBox(height: AppSpacing.xs),
         Text(
           Formatters.dateTime(order.createdAt),
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant(context)),
         ),
       ],
     );
@@ -239,11 +239,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           shape: BoxShape.circle,
                           color: isCompleted || isCurrent
                               ? AppColors.primary
-                              : AppColors.grey200,
+                              : AppColors.placeholderBg(context),
                           border: Border.all(
                             color: isCompleted || isCurrent
                                 ? AppColors.primary
-                                : AppColors.grey300,
+                                : AppColors.placeholderBg(context),
                           ),
                         ),
                         child: isCompleted
@@ -265,7 +265,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           height: 32,
                           color: isCompleted
                               ? AppColors.primary
-                              : AppColors.grey200,
+                              : AppColors.placeholderBg(context),
                         ),
                     ],
                   ),
@@ -277,8 +277,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         step.displayName,
                         style: AppTypography.bodyMedium.copyWith(
                           color: isCompleted || isCurrent
-                              ? AppColors.grey800
-                              : AppColors.grey500,
+                              ? AppColors.onSurface(context)
+                              : AppColors.onSurfaceVariant(context),
                           fontWeight:
                               isCurrent ? FontWeight.w600 : FontWeight.normal,
                         ),
@@ -329,7 +329,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   Text('Subtotal',
                       style: AppTypography.bodyMedium
-                          .copyWith(color: AppColors.grey600)),
+                          .copyWith(color: AppColors.onSurfaceVariant(context))),
                   Text(Formatters.currency(order.totalAmount),
                       style: AppTypography.bodyMedium),
                 ],
@@ -340,7 +340,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 children: [
                   Text('Delivery fee',
                       style: AppTypography.bodyMedium
-                          .copyWith(color: AppColors.grey600)),
+                          .copyWith(color: AppColors.onSurfaceVariant(context))),
                   Text(Formatters.currency(order.deliveryFee),
                       style: AppTypography.bodyMedium),
                 ],
@@ -384,11 +384,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         style: AppTypography.titleMedium),
                     Text(order.deliveryAddress.phone,
                         style: AppTypography.bodyMedium
-                            .copyWith(color: AppColors.grey600)),
+                            .copyWith(color: AppColors.onSurfaceVariant(context))),
                     const SizedBox(height: AppSpacing.xs),
                     Text(order.deliveryAddress.address,
                         style: AppTypography.bodyMedium
-                            .copyWith(color: AppColors.grey600)),
+                            .copyWith(color: AppColors.onSurfaceVariant(context))),
                   ],
                 ),
               ),

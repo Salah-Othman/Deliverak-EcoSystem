@@ -78,6 +78,35 @@ class AppTheme {
           vertical: AppSpacing.sm + 4,
         ),
       ),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: AppColors.white,
+        indicatorColor: AppColors.primary,
+        elevation: 8,
+      ),
+      navigationRailTheme: const NavigationRailThemeData(
+        backgroundColor: AppColors.white,
+        indicatorColor: AppColors.primary,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.grey800,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.white,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderRadiusMd,
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderRadiusLg,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.grey200,
+        thickness: 1,
+        space: 1,
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.white,
         selectedItemColor: AppColors.primary,
@@ -158,6 +187,36 @@ class AppTheme {
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm + 4,
         ),
+      ),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: AppColors.darkSurface,
+        indicatorColor: AppColors.primary,
+        elevation: 8,
+      ),
+      navigationRailTheme: const NavigationRailThemeData(
+        backgroundColor: AppColors.darkSurface,
+        indicatorColor: AppColors.primary,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.grey800,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.white,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderRadiusMd,
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.darkCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderRadiusLg,
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.grey800,
+        thickness: 1,
+        space: 1,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.darkSurface,

@@ -131,7 +131,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Subtotal', style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
+            Text('Subtotal', style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant(context))),
             Text(Formatters.currency(state.totalAmount), style: AppTypography.bodyMedium),
           ],
         ),
@@ -139,7 +139,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Delivery fee', style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600)),
+            Text('Delivery fee', style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant(context))),
             Text(Formatters.currency(state.deliveryFee), style: AppTypography.bodyMedium),
           ],
         ),
@@ -227,7 +227,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Text('Cash on Delivery', style: AppTypography.titleMedium),
                     Text(
                       'Pay when your order arrives',
-                      style: AppTypography.caption.copyWith(color: AppColors.grey600),
+                      style: AppTypography.caption.copyWith(color: AppColors.onSurfaceVariant(context)),
                     ),
                   ],
                 ),

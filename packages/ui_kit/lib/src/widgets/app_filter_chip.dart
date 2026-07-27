@@ -27,16 +27,20 @@ class AppFilterChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.white,
+          color: isSelected
+              ? AppColors.primary
+              : AppColors.chipBackground(context),
           borderRadius: BorderRadius.circular(AppSpacing.xl),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey300,
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.chipBorder(context),
           ),
         ),
         child: Text(
           label,
           style: AppTypography.labelMedium.copyWith(
-            color: isSelected ? AppColors.white : AppColors.grey700,
+            color: isSelected ? AppColors.white : AppColors.chipText(context),
           ),
         ),
       ),

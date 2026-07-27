@@ -42,4 +42,86 @@ abstract class AppColors {
   static const Color darkCard = Color(0xFF2D2D2D);
   static const Color darkText = Color(0xFFE0E0E0);
   static const Color darkTextSecondary = Color(0xFFB0B0B0);
+
+  // --- Semantic brightness-aware tokens ---
+
+  static Color surface(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkSurface
+          : white;
+
+  static Color surfaceContainer(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkCard
+          : white;
+
+  static Color background(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkBackground
+          : grey50;
+
+  static Color onSurface(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkText
+          : grey900;
+
+  static Color onSurfaceVariant(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkTextSecondary
+          : grey600;
+
+  static Color outline(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey700
+          : grey200;
+
+  static Color outlineVariant(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey800
+          : grey300;
+
+  static Color shimmerBase(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey800
+          : grey200;
+
+  static Color shimmerHighlight(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey700
+          : grey100;
+
+  static Color chipBackground(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkCard
+          : white;
+
+  static Color chipBorder(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey700
+          : grey300;
+
+  static Color chipText(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkText
+          : grey700;
+
+  static Color subtitleText(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? darkTextSecondary
+          : grey600;
+
+  static Color placeholderIcon(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey600
+          : grey500;
+
+  static Color placeholderBg(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey800
+          : grey200;
+
+  static Color divider(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? grey800
+          : grey200;
 }

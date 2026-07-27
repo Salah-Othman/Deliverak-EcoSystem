@@ -19,13 +19,13 @@ class AppShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.grey200,
-      highlightColor: AppColors.grey100,
+      baseColor: AppColors.shimmerBase(context),
+      highlightColor: AppColors.shimmerHighlight(context),
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surfaceContainer(context),
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
@@ -66,12 +66,12 @@ class AppShimmerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.grey200,
-      highlightColor: AppColors.grey100,
+      baseColor: AppColors.shimmerBase(context),
+      highlightColor: AppColors.shimmerHighlight(context),
       child: Container(
         height: 120,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surfaceContainer(context),
           borderRadius: AppRadius.borderRadiusMd,
         ),
         child: Row(
@@ -79,9 +79,9 @@ class AppShimmerCard extends StatelessWidget {
             Container(
               width: 120,
               height: 120,
-              decoration: const BoxDecoration(
-                color: AppColors.grey200,
-                borderRadius: BorderRadius.only(
+              decoration: BoxDecoration(
+                color: AppColors.placeholderBg(context),
+                borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(AppRadius.md),
                   bottomLeft: Radius.circular(AppRadius.md),
                 ),
@@ -96,19 +96,19 @@ class AppShimmerCard extends StatelessWidget {
                     Container(
                       width: double.infinity,
                       height: 16,
-                      color: AppColors.grey200,
+                      color: AppColors.placeholderBg(context),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Container(
                       width: 100,
                       height: 12,
-                      color: AppColors.grey200,
+                      color: AppColors.placeholderBg(context),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Container(
                       width: 60,
                       height: 12,
-                      color: AppColors.grey200,
+                      color: AppColors.placeholderBg(context),
                     ),
                   ],
                 ),

@@ -106,7 +106,7 @@ class CartScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface(context),
         boxShadow: [
           BoxShadow(
             color: AppColors.black.withValues(alpha: 0.1),
@@ -125,7 +125,7 @@ class CartScreen extends StatelessWidget {
                 Text(
                   'Subtotal',
                   style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                 ),
                 Text(
@@ -141,7 +141,7 @@ class CartScreen extends StatelessWidget {
                 Text(
                   'Delivery fee',
                   style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                 ),
                 Text(
@@ -239,7 +239,7 @@ class _CartItemCard extends StatelessWidget {
                 Text(
                   Formatters.currency(item.price),
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                 ),
               ],
@@ -299,13 +299,13 @@ class _QuantityButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: AppColors.grey100,
+          color: AppColors.chipBackground(context),
           borderRadius: AppRadius.borderRadiusSm,
         ),
         child: Icon(
           icon,
           size: 18,
-          color: AppColors.grey700,
+          color: AppColors.onSurface(context),
         ),
       ),
     );

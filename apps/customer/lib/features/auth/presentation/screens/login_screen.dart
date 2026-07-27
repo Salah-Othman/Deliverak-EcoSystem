@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Fast delivery at your fingertips',
                       style: AppTypography.bodyLarge.copyWith(
-                        color: AppColors.grey600,
+                        color: AppColors.onSurfaceVariant(context),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'By continuing, you agree to our Terms of Service and Privacy Policy',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.grey500,
+                        color: AppColors.onSurfaceVariant(context),
                       ),
                       textAlign: TextAlign.center,
                     ),

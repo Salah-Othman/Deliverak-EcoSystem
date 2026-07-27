@@ -162,20 +162,20 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                 imageUrl: widget.vendor.image,
                 fit: BoxFit.cover,
                 errorWidget: (_, _, _) => Container(
-                  color: AppColors.grey200,
-                  child: const Icon(
+                  color: AppColors.placeholderBg(context),
+                  child: Icon(
                     Icons.store,
                     size: 64,
-                    color: AppColors.grey500,
+                    color: AppColors.placeholderIcon(context),
                   ),
                 ),
               )
             : Container(
-                color: AppColors.grey200,
-                child: const Icon(
+                color: AppColors.placeholderBg(context),
+                child: Icon(
                   Icons.store,
                   size: 64,
-                  color: AppColors.grey500,
+                  color: AppColors.placeholderIcon(context),
                 ),
               ),
         title: Text(
@@ -240,7 +240,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
           Text(
             widget.vendor.description,
             style: AppTypography.bodyLarge.copyWith(
-              color: AppColors.grey700,
+              color: AppColors.onSurface(context),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -253,13 +253,13 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                 style: AppTypography.titleMedium,
               ),
               const SizedBox(width: AppSpacing.lg),
-              const Icon(Icons.shopping_bag_outlined,
-                  size: 18, color: AppColors.grey500),
+              Icon(Icons.shopping_bag_outlined,
+                  size: 18, color: AppColors.placeholderIcon(context)),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 '${widget.vendor.totalOrders} orders',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.grey600,
+                  color: AppColors.onSurfaceVariant(context),
                 ),
               ),
             ],
@@ -267,14 +267,14 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              const Icon(Icons.location_on_outlined,
-                  size: 18, color: AppColors.grey500),
+              Icon(Icons.location_on_outlined,
+                  size: 18, color: AppColors.placeholderIcon(context)),
               const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   widget.vendor.address,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -480,7 +480,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
         return Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface(context),
             boxShadow: [
               BoxShadow(
                 color: AppColors.black.withValues(alpha: 0.1),

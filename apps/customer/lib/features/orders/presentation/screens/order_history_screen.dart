@@ -140,12 +140,12 @@ class _OrderCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             Formatters.date(order.createdAt),
-            style: AppTypography.caption.copyWith(color: AppColors.grey600),
+            style: AppTypography.caption.copyWith(color: AppColors.onSurfaceVariant(context)),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             '${order.items.length} item${order.items.length > 1 ? 's' : ''}',
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.grey600),
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.onSurfaceVariant(context)),
           ),
           const SizedBox(height: AppSpacing.xs),
           Row(
@@ -158,7 +158,7 @@ class _OrderCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.grey400),
+              Icon(Icons.chevron_right, color: AppColors.placeholderIcon(context)),
             ],
           ),
         ],

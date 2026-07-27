@@ -10,6 +10,7 @@ import '../../../search/presentation/screens/search_screen.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../orders/presentation/screens/order_history_screen.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
+import '../../../profile/presentation/screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -88,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SearchScreen(),
             const CartScreen(),
             const OrderHistoryScreen(),
-            const Center(child: Text('Profile')),
+            const ProfileScreen(),
           ],
         ),
       ),
@@ -274,7 +275,7 @@ class _VendorCard extends StatelessWidget {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.grey200,
+              color: AppColors.placeholderBg(context),
               borderRadius: AppRadius.borderRadiusSm,
             ),
             child: vendor.image.isNotEmpty
@@ -283,14 +284,14 @@ class _VendorCard extends StatelessWidget {
                     width: 80,
                     height: 80,
                     borderRadius: AppRadius.borderRadiusSm,
-                    errorWidget: const Icon(
+                    errorWidget: Icon(
                       Icons.store,
-                      color: AppColors.grey500,
+                      color: AppColors.placeholderIcon(context),
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.store,
-                    color: AppColors.grey500,
+                    color: AppColors.placeholderIcon(context),
                   ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -332,7 +333,7 @@ class _VendorCard extends StatelessWidget {
                 Text(
                   vendor.category.displayName,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -349,16 +350,16 @@ class _VendorCard extends StatelessWidget {
                       style: AppTypography.bodyMedium,
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    const Icon(
+                    Icon(
                       Icons.shopping_bag_outlined,
                       size: 14,
-                      color: AppColors.grey500,
+                      color: AppColors.placeholderIcon(context),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${vendor.totalOrders} orders',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.grey500,
+                        color: AppColors.placeholderIcon(context),
                       ),
                     ),
                   ],
@@ -367,9 +368,9 @@ class _VendorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          const Icon(
+          Icon(
             Icons.chevron_right,
-            color: AppColors.grey400,
+            color: AppColors.placeholderIcon(context),
           ),
         ],
       ),

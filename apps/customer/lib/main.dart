@@ -205,29 +205,38 @@ class _DeliverakAppState extends State<DeliverakApp> {
           BlocProvider<ConnectivityCubit>(
             create: (_) => ConnectivityCubit()..init(),
           ),
+          BlocProvider<ThemeCubit>(
+            create: (_) => ThemeCubit(
+              secureStorage: widget.secureStorage,
+            )..loadTheme(),
+          ),
         ],
-        child: MaterialApp(
-          title: 'Deliverak',
-          debugShowCheckedModeBanner: false,
-          navigatorKey: navigatorKey,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
-          builder: (context, child) {
-            return Column(
-              children: [
-                BlocBuilder<ConnectivityCubit, ConnectivityState>(
-                  builder: (context, state) {
-                    return OfflineBanner(
-                      isOnline: state is ConnectivityOnline,
-                    );
-                  },
-                ),
-                Expanded(child: child ?? const SizedBox.shrink()),
-              ],
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            return MaterialApp(
+              title: 'Deliverak',
+              debugShowCheckedModeBanner: false,
+              navigatorKey: navigatorKey,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeState.flutterThemeMode,
+              builder: (context, child) {
+                return Column(
+                  children: [
+                    BlocBuilder<ConnectivityCubit, ConnectivityState>(
+                      builder: (context, state) {
+                        return OfflineBanner(
+                          isOnline: state is ConnectivityOnline,
+                        );
+                      },
+                    ),
+                    Expanded(child: child ?? const SizedBox.shrink()),
+                  ],
+                );
+              },
+              home: const AppRouter(),
             );
           },
-          home: const AppRouter(),
         ),
       ),
     );

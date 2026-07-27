@@ -104,7 +104,7 @@ class _OtpScreenState extends State<OtpScreen> {
               Text(
                 'Enter the code sent to',
                 style: AppTypography.bodyLarge.copyWith(
-                  color: AppColors.grey600,
+                  color: AppColors.onSurfaceVariant(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -151,7 +151,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     ? Text(
                         'Resend code in ${_resendSeconds}s',
                         style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.grey500,
+                          color: AppColors.onSurfaceVariant(context),
                         ),
                       )
                     : GestureDetector(

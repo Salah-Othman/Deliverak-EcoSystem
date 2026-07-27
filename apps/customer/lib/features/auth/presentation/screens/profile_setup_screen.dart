@@ -124,7 +124,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   Text(
                     'You can update your profile later in settings',
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.grey500,
+                      color: AppColors.onSurfaceVariant(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -144,14 +144,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Container(
             width: 100,
             height: 100,
-            decoration: const BoxDecoration(
-              color: AppColors.grey200,
+            decoration: BoxDecoration(
+              color: AppColors.placeholderBg(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person,
               size: 50,
-              color: AppColors.grey500,
+              color: AppColors.placeholderIcon(context),
             ),
           ),
           Positioned(

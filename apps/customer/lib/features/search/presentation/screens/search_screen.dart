@@ -106,23 +106,23 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.search,
             size: 64,
-            color: AppColors.grey300,
+            color: AppColors.placeholderBg(context),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             'Search for vendors',
             style: AppTypography.headlineMedium.copyWith(
-              color: AppColors.grey500,
+              color: AppColors.placeholderIcon(context),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Find food, groceries, medicine & more',
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.grey500,
+              color: AppColors.placeholderIcon(context),
             ),
           ),
         ],
@@ -178,7 +178,7 @@ class _SearchScreenState extends State<SearchScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppColors.grey200,
+              color: AppColors.placeholderBg(context),
               borderRadius: AppRadius.borderRadiusSm,
             ),
             child: vendor.image.isNotEmpty
@@ -187,14 +187,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     width: 60,
                     height: 60,
                     borderRadius: AppRadius.borderRadiusSm,
-                    errorWidget: const Icon(
+                    errorWidget: Icon(
                       Icons.store,
-                      color: AppColors.grey500,
+                      color: AppColors.placeholderIcon(context),
                     ),
                   )
-                : const Icon(
+                : Icon(
                     Icons.store,
-                    color: AppColors.grey500,
+                    color: AppColors.placeholderIcon(context),
                   ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -213,7 +213,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 Text(
                   vendor.category.displayName,
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.grey600,
+                    color: AppColors.onSurfaceVariant(context),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),

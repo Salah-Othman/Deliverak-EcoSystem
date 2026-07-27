@@ -33,7 +33,7 @@ class RoleSelectionScreen extends StatelessWidget {
               Text(
                 'Select the role that best describes you',
                 style: AppTypography.bodyLarge.copyWith(
-                  color: AppColors.grey600,
+                  color: AppColors.onSurfaceVariant(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -131,9 +131,9 @@ class _RoleCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             subtitle,
-            style: AppTypography.caption.copyWith(
-              color: AppColors.grey600,
-            ),
+              style: AppTypography.caption.copyWith(
+                color: AppColors.onSurfaceVariant(context),
+              ),
             textAlign: TextAlign.center,
           ),
         ],

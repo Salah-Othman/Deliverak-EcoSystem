@@ -35,7 +35,7 @@ class ErrorState extends StatelessWidget {
             Text(
               'Oops! Something went wrong',
               style: AppTypography.headlineMedium.copyWith(
-                color: AppColors.grey700,
+                color: AppColors.onSurface(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -43,7 +43,7 @@ class ErrorState extends StatelessWidget {
             Text(
               message,
               style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.grey500,
+                color: AppColors.onSurfaceVariant(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -52,7 +52,7 @@ class ErrorState extends StatelessWidget {
               Text(
                 'Error code: $code',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.grey400,
+                  color: AppColors.onSurfaceVariant(context),
                 ),
                 textAlign: TextAlign.center,
               ),

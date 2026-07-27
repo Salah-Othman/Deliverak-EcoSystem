@@ -22,7 +22,7 @@ class ProductCard extends StatelessWidget {
     return AppCard(
       child: Row(
         children: [
-          _buildImage(isUnavailable),
+          _buildImage(context, isUnavailable),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -31,7 +31,7 @@ class ProductCard extends StatelessWidget {
                 Text(
                   product.name,
                   style: AppTypography.titleMedium.copyWith(
-                    color: isUnavailable ? AppColors.grey500 : null,
+                    color: isUnavailable ? AppColors.onSurfaceVariant(context) : null,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -41,7 +41,7 @@ class ProductCard extends StatelessWidget {
                   Text(
                     product.description,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.grey600,
+                      color: AppColors.onSurfaceVariant(context),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -54,7 +54,7 @@ class ProductCard extends StatelessWidget {
                       Text(
                         Formatters.currency(product.price),
                         style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.grey500,
+                          color: AppColors.onSurfaceVariant(context),
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
@@ -70,7 +70,7 @@ class ProductCard extends StatelessWidget {
                       Text(
                         Formatters.currency(product.price),
                         style: AppTypography.titleMedium.copyWith(
-                          color: isUnavailable ? AppColors.grey500 : null,
+                          color: isUnavailable ? AppColors.onSurfaceVariant(context) : null,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -87,13 +87,13 @@ class ProductCard extends StatelessWidget {
                 vertical: AppSpacing.xs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.grey200,
+                color: AppColors.chipBackground(context),
                 borderRadius: AppRadius.borderRadiusSm,
               ),
               child: Text(
                 'Unavailable',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.grey500,
+                  color: AppColors.onSurfaceVariant(context),
                 ),
               ),
             )
@@ -104,12 +104,12 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(bool isUnavailable) {
+  Widget _buildImage(BuildContext context, bool isUnavailable) {
     return Container(
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: AppColors.grey200,
+        color: AppColors.placeholderBg(context),
         borderRadius: AppRadius.borderRadiusSm,
       ),
       child: product.images.isNotEmpty
@@ -120,12 +120,16 @@ class ProductCard extends StatelessWidget {
               borderRadius: AppRadius.borderRadiusSm,
               errorWidget: Icon(
                 Icons.fastfood_outlined,
-                color: isUnavailable ? AppColors.grey400 : AppColors.grey500,
+                color: isUnavailable
+                    ? AppColors.onSurfaceVariant(context)
+                    : AppColors.placeholderIcon(context),
               ),
             )
           : Icon(
               Icons.fastfood_outlined,
-              color: isUnavailable ? AppColors.grey400 : AppColors.grey500,
+              color: isUnavailable
+                  ? AppColors.onSurfaceVariant(context)
+                  : AppColors.placeholderIcon(context),
             ),
     );
   }

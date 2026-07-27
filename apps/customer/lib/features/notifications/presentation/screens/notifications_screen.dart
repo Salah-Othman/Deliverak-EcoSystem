@@ -149,13 +149,13 @@ class _NotificationTile extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           color: notification.isRead
-              ? AppColors.grey100
+              ? AppColors.placeholderBg(context)
               : AppColors.primary.withValues(alpha: 0.1),
           borderRadius: AppRadius.borderRadiusSm,
         ),
         child: Icon(
           _iconForType(),
-          color: notification.isRead ? AppColors.grey500 : AppColors.primary,
+          color: notification.isRead ? AppColors.placeholderIcon(context) : AppColors.primary,
           size: 22,
         ),
       ),
@@ -171,14 +171,14 @@ class _NotificationTile extends StatelessWidget {
       subtitle: Text(
         notification.body,
         style: AppTypography.bodyMedium.copyWith(
-          color: AppColors.grey600,
+          color: AppColors.onSurfaceVariant(context),
         ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: Text(
         Formatters.dateTime(notification.createdAt),
-        style: AppTypography.caption.copyWith(color: AppColors.grey500),
+        style: AppTypography.caption.copyWith(color: AppColors.placeholderIcon(context)),
       ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,

@@ -31,13 +31,13 @@ class EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: AppColors.grey400,
+              color: AppColors.onSurfaceVariant(context),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,
               style: AppTypography.headlineMedium.copyWith(
-                color: AppColors.grey700,
+                color: AppColors.onSurface(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -45,7 +45,7 @@ class EmptyState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.grey500,
+                color: AppColors.onSurfaceVariant(context),
               ),
               textAlign: TextAlign.center,
             ),
