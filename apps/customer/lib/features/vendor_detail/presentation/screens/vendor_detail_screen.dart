@@ -20,6 +20,7 @@ class VendorDetailScreen extends StatefulWidget {
 class _VendorDetailScreenState extends State<VendorDetailScreen> {
   String? _selectedCategory;
   late final ProductCubit _productCubit;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -27,12 +28,23 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
     _productCubit = ProductCubit(
       productRepository: context.read<IProductRepository>(),
     )..loadProducts(vendorId: widget.vendor.vendorId);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _productCubit.close();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 200) {
+      _productCubit.loadMore();
+    }
   }
 
   List<ProductModel> _filterProducts(List<ProductModel> products) {
@@ -91,6 +103,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
       value: _productCubit,
       child: Scaffold(
         body: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             _buildSliverAppBar(),
             SliverToBoxAdapter(
@@ -323,11 +336,24 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             );
           }
 
+          final hasMore = state.hasMore;
+          final isLoadingMore = state.isLoadingMore;
+
           return SliverPadding(
             padding: const EdgeInsets.all(AppSpacing.md),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
+                  if (index == filtered.length) {
+                    if (isLoadingMore) {
+                      return const Padding(
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        child: Center(child: AppLoader(size: 24)),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+
                   final product = filtered[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -339,7 +365,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                     ),
                   );
                 },
-                childCount: filtered.length,
+                childCount: filtered.length + (hasMore ? 1 : 0),
               ),
             ),
           );

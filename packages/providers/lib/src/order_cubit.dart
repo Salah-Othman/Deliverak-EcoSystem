@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,11 +28,17 @@ class OrderCreated extends OrderState {
 
 class OrdersLoaded extends OrderState {
   final List<OrderModel> orders;
+  final bool hasMore;
+  final bool isLoadingMore;
 
-  const OrdersLoaded(this.orders);
+  const OrdersLoaded({
+    required this.orders,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+  });
 
   @override
-  List<Object?> get props => [orders];
+  List<Object?> get props => [orders, hasMore, isLoadingMore];
 }
 
 class OrderDetailLoaded extends OrderState {
@@ -60,6 +67,14 @@ class OrderCubit extends Cubit<OrderState> {
   final IOrderRepository _orderRepository;
   StreamSubscription<List<OrderModel>>? _ordersSubscription;
   StreamSubscription<OrderModel?>? _orderSubscription;
+  DocumentSnapshot? _lastDocument;
+  String? _currentCustomerId;
+  String? _currentVendorId;
+  String? _currentDriverId;
+  OrderStatus? _currentStatus;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 20;
 
   OrderCubit({required IOrderRepository orderRepository})
       : _orderRepository = orderRepository,
@@ -99,19 +114,70 @@ class OrderCubit extends Cubit<OrderState> {
     OrderStatus? status,
   }) async {
     emit(OrderLoading());
+    _currentCustomerId = customerId;
+    _currentVendorId = vendorId;
+    _currentDriverId = driverId;
+    _currentStatus = status;
+    _lastDocument = null;
+    _hasMore = true;
+
     try {
-      final orders = await _orderRepository.getOrders(
+      final result = await _orderRepository.getOrdersPaginated(
         customerId: customerId,
         vendorId: vendorId,
         driverId: driverId,
         status: status,
+        limit: _pageSize,
       );
-      emit(OrdersLoaded(orders));
+      _lastDocument = result.lastDocument;
+      _hasMore = result.hasMore;
+      emit(OrdersLoaded(
+        orders: result.items,
+        hasMore: _hasMore,
+      ));
     } catch (e) {
       emit(OrderError(
         message: mapExceptionToMessage(e),
         isRetryable: isRetryableError(e),
       ));
+    }
+  }
+
+  Future<void> loadMore() async {
+    final currentState = state;
+    if (currentState is! OrdersLoaded) return;
+    if (_isLoadingMore || !_hasMore) return;
+
+    _isLoadingMore = true;
+    emit(OrdersLoaded(
+      orders: currentState.orders,
+      hasMore: _hasMore,
+      isLoadingMore: true,
+    ));
+
+    try {
+      final result = await _orderRepository.getOrdersPaginated(
+        customerId: _currentCustomerId,
+        vendorId: _currentVendorId,
+        driverId: _currentDriverId,
+        status: _currentStatus,
+        lastDocument: _lastDocument,
+        limit: _pageSize,
+      );
+      _lastDocument = result.lastDocument;
+      _hasMore = result.hasMore;
+
+      emit(OrdersLoaded(
+        orders: [...currentState.orders, ...result.items],
+        hasMore: _hasMore,
+      ));
+    } catch (e) {
+      emit(OrdersLoaded(
+        orders: currentState.orders,
+        hasMore: _hasMore,
+      ));
+    } finally {
+      _isLoadingMore = false;
     }
   }
 
@@ -130,7 +196,7 @@ class OrderCubit extends Cubit<OrderState> {
           status: status,
         )
         .listen(
-      (orders) => emit(OrdersLoaded(orders)),
+      (orders) => emit(OrdersLoaded(orders: orders)),
       onError: (e) => emit(OrderError(message: mapExceptionToMessage(e))),
     );
   }

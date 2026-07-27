@@ -30,14 +30,19 @@ void main() {
     blocTest<ProductCubit, ProductState>(
       'emits [ProductLoading, ProductsLoaded] on loadProducts',
       build: () {
-        when(() => mockProductRepository.getProducts(
+        when(() => mockProductRepository.getProductsPaginated(
               vendorId: any(named: 'vendorId'),
               category: any(named: 'category'),
               isAvailable: any(named: 'isAvailable'),
-            )).thenAnswer((_) async => [
-              ProductModelFixture.create(productId: 'p1'),
-              ProductModelFixture.create(productId: 'p2'),
-            ]);
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<ProductModel>(
+              items: [
+                ProductModelFixture.create(productId: 'p1'),
+                ProductModelFixture.create(productId: 'p2'),
+              ],
+              hasMore: false,
+            ));
         return cubit;
       },
       act: (cubit) => cubit.loadProducts(vendorId: 'v1'),
@@ -50,10 +55,12 @@ void main() {
     blocTest<ProductCubit, ProductState>(
       'emits [ProductLoading, ProductError] on loadProducts failure',
       build: () {
-        when(() => mockProductRepository.getProducts(
+        when(() => mockProductRepository.getProductsPaginated(
               vendorId: any(named: 'vendorId'),
               category: any(named: 'category'),
               isAvailable: any(named: 'isAvailable'),
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
             )).thenThrow(Exception('failed'));
         return cubit;
       },
@@ -62,6 +69,48 @@ void main() {
         isA<ProductLoading>(),
         isA<ProductError>(),
       ],
+    );
+
+    blocTest<ProductCubit, ProductState>(
+      'loadMore appends products when more available',
+      build: () {
+        when(() => mockProductRepository.getProductsPaginated(
+              vendorId: any(named: 'vendorId'),
+              category: any(named: 'category'),
+              isAvailable: any(named: 'isAvailable'),
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<ProductModel>(
+              items: [ProductModelFixture.create(productId: 'p2')],
+              hasMore: true,
+            ));
+        return cubit;
+      },
+      seed: () => ProductsLoaded(
+        products: [ProductModelFixture.create(productId: 'p1')],
+        hasMore: true,
+      ),
+      act: (cubit) => cubit.loadMore(),
+      expect: () => [
+        isA<ProductsLoaded>(),
+        isA<ProductsLoaded>(),
+      ],
+      verify: (cubit) {
+        final state = cubit.state as ProductsLoaded;
+        expect(state.products.length, 2);
+        expect(state.hasMore, true);
+      },
+    );
+
+    blocTest<ProductCubit, ProductState>(
+      'loadMore does nothing when hasMore is false',
+      build: () => cubit,
+      seed: () => ProductsLoaded(
+        products: [ProductModelFixture.create()],
+        hasMore: false,
+      ),
+      act: (cubit) => cubit.loadMore(),
+      expect: () => [],
     );
 
     blocTest<ProductCubit, ProductState>(
@@ -76,7 +125,6 @@ void main() {
         cubit.watchProducts('v1');
         await Future.delayed(Duration.zero);
       },
-      // Note: can't easily test stream emissions without actual data
     );
 
     test('close cancels products subscription', () async {

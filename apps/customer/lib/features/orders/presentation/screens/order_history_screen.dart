@@ -68,6 +68,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildOrderList(List<OrderModel> orders) {
+    final currentState = context.watch<OrderCubit>().state;
+    final hasMore = currentState is OrdersLoaded ? currentState.hasMore : false;
+    final isLoadingMore =
+        currentState is OrdersLoaded ? currentState.isLoadingMore : false;
+
     return RefreshIndicator(
       onRefresh: () async {
         final authState = context.read<AuthCubit>().state;
@@ -77,11 +82,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               );
         }
       },
-      child: ListView.builder(
+      child: PaginatedList(
+        items: orders,
+        hasMore: hasMore,
+        isLoadingMore: isLoadingMore,
+        onLoadMore: () => context.read<OrderCubit>().loadMore(),
         padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: orders.length,
-        itemBuilder: (context, index) {
-          final order = orders[index];
+        itemBuilder: (context, order, index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: _OrderCard(

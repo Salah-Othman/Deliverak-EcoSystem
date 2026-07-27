@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,11 +17,17 @@ class VendorLoading extends VendorState {}
 
 class VendorsLoaded extends VendorState {
   final List<VendorModel> vendors;
+  final bool hasMore;
+  final bool isLoadingMore;
 
-  const VendorsLoaded(this.vendors);
+  const VendorsLoaded({
+    required this.vendors,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+  });
 
   @override
-  List<Object?> get props => [vendors];
+  List<Object?> get props => [vendors, hasMore, isLoadingMore];
 }
 
 class VendorError extends VendorState {
@@ -38,6 +45,12 @@ class VendorError extends VendorState {
 
 class VendorCubit extends Cubit<VendorState> {
   final IVendorRepository _vendorRepository;
+  DocumentSnapshot? _lastDocument;
+  DeliveryType? _currentCategory;
+  bool _currentIsOpen = false;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  static const int _pageSize = 20;
 
   VendorCubit({required IVendorRepository vendorRepository})
       : _vendorRepository = vendorRepository,
@@ -48,12 +61,23 @@ class VendorCubit extends Cubit<VendorState> {
     bool? isOpen,
   }) async {
     emit(VendorLoading());
+    _currentCategory = category;
+    _currentIsOpen = isOpen ?? false;
+    _lastDocument = null;
+    _hasMore = true;
+
     try {
-      final vendors = await _vendorRepository.getVendors(
+      final result = await _vendorRepository.getVendorsPaginated(
         category: category,
         isOpen: isOpen,
+        limit: _pageSize,
       );
-      emit(VendorsLoaded(vendors));
+      _lastDocument = result.lastDocument;
+      _hasMore = result.hasMore;
+      emit(VendorsLoaded(
+        vendors: result.items,
+        hasMore: _hasMore,
+      ));
     } catch (e) {
       emit(VendorError(
         message: mapExceptionToMessage(e),
@@ -62,11 +86,48 @@ class VendorCubit extends Cubit<VendorState> {
     }
   }
 
+  Future<void> loadMore() async {
+    final currentState = state;
+    if (currentState is! VendorsLoaded) return;
+    if (_isLoadingMore || !_hasMore) return;
+
+    _isLoadingMore = true;
+    emit(VendorsLoaded(
+      vendors: currentState.vendors,
+      hasMore: _hasMore,
+      isLoadingMore: true,
+    ));
+
+    try {
+      final result = await _vendorRepository.getVendorsPaginated(
+        category: _currentCategory,
+        isOpen: _currentIsOpen,
+        lastDocument: _lastDocument,
+        limit: _pageSize,
+      );
+      _lastDocument = result.lastDocument;
+      _hasMore = result.hasMore;
+
+      emit(VendorsLoaded(
+        vendors: [...currentState.vendors, ...result.items],
+        hasMore: _hasMore,
+      ));
+    } catch (e) {
+      emit(VendorsLoaded(
+        vendors: currentState.vendors,
+        hasMore: _hasMore,
+      ));
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+
   Future<void> searchVendors(String query) async {
     emit(VendorLoading());
+    _hasMore = false;
     try {
       final vendors = await _vendorRepository.searchVendors(query);
-      emit(VendorsLoaded(vendors));
+      emit(VendorsLoaded(vendors: vendors));
     } catch (e) {
       emit(VendorError(
         message: mapExceptionToMessage(e),

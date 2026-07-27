@@ -21,12 +21,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   DeliveryType? _selectedCategory;
+  final ScrollController _vendorScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     context.read<VendorCubit>().loadVendors();
     _loadNotifications();
+  }
+
+  @override
+  void dispose() {
+    _vendorScrollController.dispose();
+    super.dispose();
   }
 
   void _loadNotifications() {
@@ -211,11 +218,14 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          return ListView.builder(
+          return PaginatedList(
+            items: state.vendors,
+            scrollController: _vendorScrollController,
+            hasMore: state.hasMore,
+            isLoadingMore: state.isLoadingMore,
+            onLoadMore: () => context.read<VendorCubit>().loadMore(),
             padding: const EdgeInsets.all(AppSpacing.md),
-            itemCount: state.vendors.length,
-            itemBuilder: (context, index) {
-              final vendor = state.vendors[index];
+            itemBuilder: (context, vendor, index) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _VendorCard(

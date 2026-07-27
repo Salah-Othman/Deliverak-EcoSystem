@@ -90,12 +90,17 @@ void main() {
     blocTest<OrderCubit, OrderState>(
       'emits [OrderLoading, OrdersLoaded] on loadOrders',
       build: () {
-        when(() => mockOrderRepository.getOrders(
+        when(() => mockOrderRepository.getOrdersPaginated(
               customerId: any(named: 'customerId'),
               vendorId: any(named: 'vendorId'),
               driverId: any(named: 'driverId'),
               status: any(named: 'status'),
-            )).thenAnswer((_) async => [OrderModelFixture.create()]);
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<OrderModel>(
+              items: [OrderModelFixture.create()],
+              hasMore: false,
+            ));
         return cubit;
       },
       act: (cubit) => cubit.loadOrders(customerId: 'c1'),
@@ -116,6 +121,49 @@ void main() {
       },
       act: (cubit) => cubit.cancelOrder('order-1'),
       expect: () => [isA<OrderLoading>()],
+    );
+
+    blocTest<OrderCubit, OrderState>(
+      'loadMore appends orders when more available',
+      build: () {
+        when(() => mockOrderRepository.getOrdersPaginated(
+              customerId: any(named: 'customerId'),
+              vendorId: any(named: 'vendorId'),
+              driverId: any(named: 'driverId'),
+              status: any(named: 'status'),
+              lastDocument: any(named: 'lastDocument'),
+              limit: any(named: 'limit'),
+            )).thenAnswer((_) async => PaginatedResult<OrderModel>(
+              items: [OrderModelFixture.create(orderId: 'order-2')],
+              hasMore: true,
+            ));
+        return cubit;
+      },
+      seed: () => OrdersLoaded(
+        orders: [OrderModelFixture.create(orderId: 'order-1')],
+        hasMore: true,
+      ),
+      act: (cubit) => cubit.loadMore(),
+      expect: () => [
+        isA<OrdersLoaded>(),
+        isA<OrdersLoaded>(),
+      ],
+      verify: (cubit) {
+        final state = cubit.state as OrdersLoaded;
+        expect(state.orders.length, 2);
+        expect(state.hasMore, true);
+      },
+    );
+
+    blocTest<OrderCubit, OrderState>(
+      'loadMore does nothing when hasMore is false',
+      build: () => cubit,
+      seed: () => OrdersLoaded(
+        orders: [OrderModelFixture.create()],
+        hasMore: false,
+      ),
+      act: (cubit) => cubit.loadMore(),
+      expect: () => [],
     );
 
     test('close cancels both subscriptions', () async {

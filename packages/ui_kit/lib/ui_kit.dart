@@ -14,3 +14,4 @@ export 'src/widgets/app_loader.dart';
 export 'src/widgets/app_dialog.dart';
 export 'src/widgets/app_filter_chip.dart';
 export 'src/widgets/cached_image.dart';
+export 'src/widgets/paginated_list.dart';

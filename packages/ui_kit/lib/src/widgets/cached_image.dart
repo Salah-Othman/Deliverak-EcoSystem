@@ -9,6 +9,8 @@ class CachedImage extends StatelessWidget {
   final BorderRadius? borderRadius;
   final Widget? placeholder;
   final Widget? errorWidget;
+  final Duration fadeInDuration;
+  final Duration fadeOutDuration;
 
   const CachedImage({
     super.key,
@@ -19,6 +21,8 @@ class CachedImage extends StatelessWidget {
     this.borderRadius,
     this.placeholder,
     this.errorWidget,
+    this.fadeInDuration = const Duration(milliseconds: 300),
+    this.fadeOutDuration = const Duration(milliseconds: 200),
   });
 
   @override
@@ -30,7 +34,9 @@ class CachedImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: width?.toInt(),
       memCacheHeight: height?.toInt(),
-      placeholder: (_, __) =>
+      fadeInDuration: fadeInDuration,
+      fadeOutDuration: fadeOutDuration,
+      placeholder: (_, _) =>
           placeholder ??
           Container(
             width: width,
@@ -44,7 +50,7 @@ class CachedImage extends StatelessWidget {
               ),
             ),
           ),
-      errorWidget: (_, __, ___) =>
+      errorWidget: (_, _, _) =>
           errorWidget ??
           Container(
             width: width,
