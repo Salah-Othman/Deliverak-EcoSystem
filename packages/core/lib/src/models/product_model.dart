@@ -1,61 +1,42 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../exceptions/app_exception.dart';
 
-class ProductModel extends Equatable {
-  final String productId;
-  final String vendorId;
-  final String name;
-  final String description;
-  final double price;
-  final double? discountPrice;
-  final List<String> images;
-  final String category;
-  final bool isAvailable;
-  final DateTime createdAt;
+part 'product_model.freezed.dart';
+part 'product_model.g.dart';
 
-  const ProductModel({
-    required this.productId,
-    required this.vendorId,
-    required this.name,
-    required this.description,
-    required this.price,
-    this.discountPrice,
-    required this.images,
-    required this.category,
-    required this.isAvailable,
-    required this.createdAt,
-  });
+DateTime _productDateTimeFromJson(String value) => DateTime.parse(value);
+String _productDateTimeToJson(DateTime value) => value.toIso8601String();
+
+@Freezed(copyWith: false)
+abstract class ProductModel with _$ProductModel {
+  const factory ProductModel({
+    @Default('') String productId,
+    @Default('') String vendorId,
+    @Default('') String name,
+    @Default('') String description,
+    @Default(0.0) double price,
+    double? discountPrice,
+    @Default([]) List<String> images,
+    @Default('') String category,
+    @Default(true) bool isAvailable,
+    @JsonKey(toJson: _productDateTimeToJson, fromJson: _productDateTimeFromJson)
+    required DateTime createdAt,
+  }) = _ProductModel;
+
+  const ProductModel._();
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) =>
+      _$ProductModelFromJson(json);
 
   factory ProductModel.fromMap(Map<String, dynamic> map) {
-    return ProductModel(
-      productId: map['productId'] as String? ?? '',
-      vendorId: map['vendorId'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      description: map['description'] as String? ?? '',
-      price: (map['price'] as num?)?.toDouble() ?? 0.0,
-      discountPrice: (map['discountPrice'] as num?)?.toDouble(),
-      images: List<String>.from(map['images'] as List<dynamic>? ?? []),
-      category: map['category'] as String? ?? '',
-      isAvailable: map['isAvailable'] as bool? ?? true,
-      createdAt: DateTime.parse(map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-    );
+    return ProductModel.fromJson({
+      'createdAt': DateTime.now().toIso8601String(),
+      ...map,
+    });
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'productId': productId,
-      'vendorId': vendorId,
-      'name': name,
-      'description': description,
-      'price': price,
-      'discountPrice': discountPrice,
-      'images': images,
-      'category': category,
-      'isAvailable': isAvailable,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => toJson();
 
   ProductModel copyWith({
     String? name,
@@ -79,9 +60,6 @@ class ProductModel extends Equatable {
       createdAt: createdAt,
     );
   }
-
-  @override
-  List<Object?> get props => [productId, vendorId, name, description, price, discountPrice, images, category, isAvailable, createdAt];
 
   void validate() {
     if (productId.trim().isEmpty) {

@@ -26,8 +26,17 @@ void main() async {
   final IFirestoreService firestoreService = FirestoreService();
   final ISecureStorageService secureStorage = SecureStorageService();
   final ICacheService cacheService = HiveCacheService();
+  final IAnalyticsService analyticsService = AnalyticsService();
+  final ICrashlyticsService crashlyticsService = CrashlyticsService();
 
+  await crashlyticsService.initialize();
   await cacheService.init();
+
+  final offlineSyncService = OfflineSyncService(
+    cache: cacheService,
+    crashlytics: crashlyticsService,
+  );
+  await offlineSyncService.initialize();
 
   runApp(
     DeliverakAdminApp(
@@ -35,6 +44,9 @@ void main() async {
       firestoreService: firestoreService,
       secureStorage: secureStorage,
       cacheService: cacheService,
+      analyticsService: analyticsService,
+      crashlyticsService: crashlyticsService,
+      offlineSyncService: offlineSyncService,
     ),
   );
 }
@@ -44,6 +56,9 @@ class DeliverakAdminApp extends StatelessWidget {
   final IFirestoreService firestoreService;
   final ISecureStorageService secureStorage;
   final ICacheService cacheService;
+  final IAnalyticsService analyticsService;
+  final ICrashlyticsService crashlyticsService;
+  final OfflineSyncService offlineSyncService;
 
   const DeliverakAdminApp({
     super.key,
@@ -51,6 +66,9 @@ class DeliverakAdminApp extends StatelessWidget {
     required this.firestoreService,
     required this.secureStorage,
     required this.cacheService,
+    required this.analyticsService,
+    required this.crashlyticsService,
+    required this.offlineSyncService,
   });
 
   @override
@@ -61,6 +79,9 @@ class DeliverakAdminApp extends StatelessWidget {
         RepositoryProvider<IFirestoreService>.value(value: firestoreService),
         RepositoryProvider<ISecureStorageService>.value(value: secureStorage),
         RepositoryProvider<ICacheService>.value(value: cacheService),
+        RepositoryProvider<IAnalyticsService>.value(value: analyticsService),
+        RepositoryProvider<ICrashlyticsService>.value(value: crashlyticsService),
+        RepositoryProvider<OfflineSyncService>.value(value: offlineSyncService),
         RepositoryProvider<IAuthRepository>(
           create: (_) => AuthRepository(
             authService: authService,

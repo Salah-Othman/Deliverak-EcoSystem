@@ -1,71 +1,40 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../exceptions/app_exception.dart';
 
-class NotificationModel extends Equatable {
-  final String notificationId;
-  final String userId;
-  final String title;
-  final String body;
-  final String type;
-  final String? referenceId;
-  final bool isRead;
-  final DateTime createdAt;
+part 'notification_model.freezed.dart';
+part 'notification_model.g.dart';
 
-  const NotificationModel({
-    required this.notificationId,
-    required this.userId,
-    required this.title,
-    required this.body,
-    required this.type,
-    this.referenceId,
-    required this.isRead,
-    required this.createdAt,
-  });
+DateTime _notifDateTimeFromJson(String value) => DateTime.parse(value);
+String _notifDateTimeToJson(DateTime value) => value.toIso8601String();
 
-  factory NotificationModel.fromMap(Map<String, dynamic> map) {
-    return NotificationModel(
-      notificationId: map['notificationId'] as String? ?? '',
-      userId: map['userId'] as String? ?? '',
-      title: map['title'] as String? ?? '',
-      body: map['body'] as String? ?? '',
-      type: map['type'] as String? ?? '',
-      referenceId: map['referenceId'] as String?,
-      isRead: map['isRead'] as bool? ?? false,
-      createdAt: DateTime.parse(map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-    );
+@freezed
+abstract class NotificationModel with _$NotificationModel {
+  const factory NotificationModel({
+    @Default('') String notificationId,
+    @Default('') String userId,
+    @Default('') String title,
+    @Default('') String body,
+    @Default('') String type,
+    String? referenceId,
+    @Default(false) bool isRead,
+    @JsonKey(toJson: _notifDateTimeToJson, fromJson: _notifDateTimeFromJson)
+    required DateTime createdAt,
+  }) = _NotificationModel;
+
+  const NotificationModel._();
+
+  factory NotificationModel.fromJson(Map<String, dynamic> json) =>
+      _$NotificationModelFromJson(json);
+
+  static NotificationModel fromMap(Map<String, dynamic> map) {
+    return NotificationModel.fromJson({
+      'createdAt': DateTime.now().toIso8601String(),
+      ...map,
+    });
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'notificationId': notificationId,
-      'userId': userId,
-      'title': title,
-      'body': body,
-      'type': type,
-      'referenceId': referenceId,
-      'isRead': isRead,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  NotificationModel copyWith({
-    bool? isRead,
-  }) {
-    return NotificationModel(
-      notificationId: notificationId,
-      userId: userId,
-      title: title,
-      body: body,
-      type: type,
-      referenceId: referenceId,
-      isRead: isRead ?? this.isRead,
-      createdAt: createdAt,
-    );
-  }
-
-  @override
-  List<Object?> get props => [notificationId, userId, title, body, type, referenceId, isRead, createdAt];
+  Map<String, dynamic> toMap() => toJson();
 
   void validate() {
     if (notificationId.trim().isEmpty) {
@@ -75,10 +44,14 @@ class NotificationModel extends Equatable {
       throw const ValidationException(message: 'User ID is required');
     }
     if (title.trim().isEmpty || title.trim().length > 100) {
-      throw const ValidationException(message: 'Notification title must be 1–100 characters');
+      throw const ValidationException(
+        message: 'Notification title must be 1–100 characters',
+      );
     }
     if (body.trim().isEmpty || body.trim().length > 500) {
-      throw const ValidationException(message: 'Notification body must be 1–500 characters');
+      throw const ValidationException(
+        message: 'Notification body must be 1–500 characters',
+      );
     }
   }
 }

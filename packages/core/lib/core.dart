@@ -36,3 +36,7 @@ export 'src/interfaces/product_repository.dart';
 export 'src/interfaces/order_repository.dart';
 export 'src/interfaces/driver_repository.dart';
 export 'src/interfaces/notification_repository.dart';
+export 'src/interfaces/analytics_service.dart';
+export 'src/interfaces/crashlytics_service.dart';
+
+export 'src/models/pending_write.dart';

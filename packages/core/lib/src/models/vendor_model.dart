@@ -1,77 +1,55 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../enums/delivery_type.dart';
 import '../exceptions/app_exception.dart';
 
-class VendorModel extends Equatable {
-  final String vendorId;
-  final String name;
-  final String description;
-  final String image;
-  final DeliveryType category;
-  final double lat;
-  final double lng;
-  final String address;
-  final double rating;
-  final int totalOrders;
-  final bool isOpen;
-  final String ownerId;
-  final DateTime createdAt;
+part 'vendor_model.freezed.dart';
+part 'vendor_model.g.dart';
 
-  const VendorModel({
-    required this.vendorId,
-    required this.name,
-    required this.description,
-    required this.image,
-    required this.category,
-    required this.lat,
-    required this.lng,
-    required this.address,
-    required this.rating,
-    required this.totalOrders,
-    required this.isOpen,
-    required this.ownerId,
-    required this.createdAt,
-  });
+DateTime _vendorDateTimeFromJson(String value) => DateTime.parse(value);
+String _vendorDateTimeToJson(DateTime value) => value.toIso8601String();
+
+DeliveryType _deliveryTypeFromJson(String value) =>
+    DeliveryType.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => DeliveryType.food,
+    );
+
+String _deliveryTypeToJson(DeliveryType type) => type.name;
+
+@Freezed(copyWith: false)
+abstract class VendorModel with _$VendorModel {
+  const factory VendorModel({
+    @Default('') String vendorId,
+    @Default('') String name,
+    @Default('') String description,
+    @Default('') String image,
+    @JsonKey(toJson: _deliveryTypeToJson, fromJson: _deliveryTypeFromJson)
+    @Default(DeliveryType.food) DeliveryType category,
+    @Default(0.0) double lat,
+    @Default(0.0) double lng,
+    @Default('') String address,
+    @Default(0.0) double rating,
+    @Default(0) int totalOrders,
+    @Default(false) bool isOpen,
+    @Default('') String ownerId,
+    @JsonKey(toJson: _vendorDateTimeToJson, fromJson: _vendorDateTimeFromJson)
+    required DateTime createdAt,
+  }) = _VendorModel;
+
+  const VendorModel._();
+
+  factory VendorModel.fromJson(Map<String, dynamic> json) =>
+      _$VendorModelFromJson(json);
 
   factory VendorModel.fromMap(Map<String, dynamic> map) {
-    return VendorModel(
-      vendorId: map['vendorId'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      description: map['description'] as String? ?? '',
-      image: map['image'] as String? ?? '',
-      category: DeliveryType.values.firstWhere(
-        (e) => e.name == map['category'],
-        orElse: () => DeliveryType.food,
-      ),
-      lat: (map['lat'] as num?)?.toDouble() ?? 0.0,
-      lng: (map['lng'] as num?)?.toDouble() ?? 0.0,
-      address: map['address'] as String? ?? '',
-      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
-      totalOrders: map['totalOrders'] as int? ?? 0,
-      isOpen: map['isOpen'] as bool? ?? false,
-      ownerId: map['ownerId'] as String? ?? '',
-      createdAt: DateTime.parse(map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-    );
+    return VendorModel.fromJson({
+      'createdAt': DateTime.now().toIso8601String(),
+      ...map,
+    });
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'vendorId': vendorId,
-      'name': name,
-      'description': description,
-      'image': image,
-      'category': category.name,
-      'lat': lat,
-      'lng': lng,
-      'address': address,
-      'rating': rating,
-      'totalOrders': totalOrders,
-      'isOpen': isOpen,
-      'ownerId': ownerId,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => toJson();
 
   VendorModel copyWith({
     String? name,
@@ -101,9 +79,6 @@ class VendorModel extends Equatable {
       createdAt: createdAt,
     );
   }
-
-  @override
-  List<Object?> get props => [vendorId, name, description, image, category, lat, lng, address, rating, totalOrders, isOpen, ownerId, createdAt];
 
   void validate() {
     if (vendorId.trim().isEmpty) {

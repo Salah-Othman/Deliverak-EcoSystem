@@ -36,7 +36,10 @@ void main() async {
   final ICacheService cacheService = HiveCacheService();
   final ILocalNotificationService localNotificationService =
       LocalNotificationService();
+  final IAnalyticsService analyticsService = AnalyticsService();
+  final ICrashlyticsService crashlyticsService = CrashlyticsService();
 
+  await crashlyticsService.initialize();
   await cacheService.init();
   await fcmService.requestPermission();
   await localNotificationService.initialize(
@@ -44,6 +47,12 @@ void main() async {
     androidChannelName: 'Deliverak Notifications',
     androidChannelDescription: 'General notifications from Deliverak',
   );
+
+  final offlineSyncService = OfflineSyncService(
+    cache: cacheService,
+    crashlytics: crashlyticsService,
+  );
+  await offlineSyncService.initialize();
 
   final IStorageService cloudinaryService = CloudinaryService(
     cloudName: Env.cloudinaryCloudName,
@@ -59,6 +68,9 @@ void main() async {
       secureStorage: secureStorage,
       cacheService: cacheService,
       localNotificationService: localNotificationService,
+      analyticsService: analyticsService,
+      crashlyticsService: crashlyticsService,
+      offlineSyncService: offlineSyncService,
     ),
   );
 }
@@ -71,6 +83,9 @@ class DeliverakApp extends StatefulWidget {
   final ISecureStorageService secureStorage;
   final ICacheService cacheService;
   final ILocalNotificationService localNotificationService;
+  final IAnalyticsService analyticsService;
+  final ICrashlyticsService crashlyticsService;
+  final OfflineSyncService offlineSyncService;
 
   const DeliverakApp({
     super.key,
@@ -81,6 +96,9 @@ class DeliverakApp extends StatefulWidget {
     required this.secureStorage,
     required this.cacheService,
     required this.localNotificationService,
+    required this.analyticsService,
+    required this.crashlyticsService,
+    required this.offlineSyncService,
   });
 
   @override
@@ -128,6 +146,9 @@ class _DeliverakAppState extends State<DeliverakApp> {
         RepositoryProvider<ISecureStorageService>.value(value: widget.secureStorage),
         RepositoryProvider<ICacheService>.value(value: widget.cacheService),
         RepositoryProvider<ILocalNotificationService>.value(value: widget.localNotificationService),
+        RepositoryProvider<IAnalyticsService>.value(value: widget.analyticsService),
+        RepositoryProvider<ICrashlyticsService>.value(value: widget.crashlyticsService),
+        RepositoryProvider<OfflineSyncService>.value(value: widget.offlineSyncService),
         RepositoryProvider<IAuthRepository>(
           create: (_) => AuthRepository(
             authService: widget.authService,

@@ -1,61 +1,53 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../enums/user_role.dart';
 import '../exceptions/app_exception.dart';
 
-class UserModel extends Equatable {
-  final String uid;
-  final String name;
-  final String email;
-  final String phone;
-  final UserRole role;
-  final String? fcmToken;
-  final String? profileImage;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+part 'user_model.freezed.dart';
+part 'user_model.g.dart';
 
-  const UserModel({
-    required this.uid,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.role,
-    this.fcmToken,
-    this.profileImage,
-    required this.createdAt,
-    required this.updatedAt,
-  });
+DateTime _userDateTimeFromJson(String value) => DateTime.parse(value);
+String _userDateTimeToJson(DateTime value) => value.toIso8601String();
+
+UserRole _roleFromJson(String value) => UserRole.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => UserRole.customer,
+    );
+
+String _roleToJson(UserRole role) => role.name;
+
+@Freezed(copyWith: false)
+abstract class UserModel with _$UserModel {
+  const factory UserModel({
+    @Default('') String uid,
+    @Default('') String name,
+    @Default('') String email,
+    @Default('') String phone,
+    @JsonKey(toJson: _roleToJson, fromJson: _roleFromJson)
+    @Default(UserRole.customer) UserRole role,
+    String? fcmToken,
+    String? profileImage,
+    @JsonKey(toJson: _userDateTimeToJson, fromJson: _userDateTimeFromJson)
+    required DateTime createdAt,
+    @JsonKey(toJson: _userDateTimeToJson, fromJson: _userDateTimeFromJson)
+    required DateTime updatedAt,
+  }) = _UserModel;
+
+  const UserModel._();
+
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      uid: map['uid'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      email: map['email'] as String? ?? '',
-      phone: map['phone'] as String? ?? '',
-      role: UserRole.values.firstWhere(
-        (e) => e.name == map['role'],
-        orElse: () => UserRole.customer,
-      ),
-      fcmToken: map['fcmToken'] as String?,
-      profileImage: map['profileImage'] as String?,
-      createdAt: DateTime.parse(map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
-    );
+    final now = DateTime.now().toIso8601String();
+    return UserModel.fromJson({
+      'createdAt': now,
+      'updatedAt': now,
+      ...map,
+    });
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'role': role.name,
-      'fcmToken': fcmToken,
-      'profileImage': profileImage,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
-  }
+  Map<String, dynamic> toMap() => toJson();
 
   UserModel copyWith({
     String? name,
@@ -77,9 +69,6 @@ class UserModel extends Equatable {
       updatedAt: DateTime.now(),
     );
   }
-
-  @override
-  List<Object?> get props => [uid, name, email, phone, role, fcmToken, profileImage, createdAt, updatedAt];
 
   void validate() {
     if (uid.trim().isEmpty) {

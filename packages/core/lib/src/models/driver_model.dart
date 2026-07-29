@@ -1,93 +1,43 @@
-import 'package:equatable/equatable.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../exceptions/app_exception.dart';
 
-class DriverModel extends Equatable {
-  final String driverId;
-  final String userId;
-  final String vehicleType;
-  final String vehicleNumber;
-  final String licenseNumber;
-  final bool isOnline;
-  final double currentLat;
-  final double currentLng;
-  final double rating;
-  final int totalDeliveries;
-  final DateTime createdAt;
+part 'driver_model.freezed.dart';
+part 'driver_model.g.dart';
 
-  const DriverModel({
-    required this.driverId,
-    required this.userId,
-    required this.vehicleType,
-    required this.vehicleNumber,
-    required this.licenseNumber,
-    required this.isOnline,
-    required this.currentLat,
-    required this.currentLng,
-    required this.rating,
-    required this.totalDeliveries,
-    required this.createdAt,
-  });
+DateTime _driverDateTimeFromJson(String value) => DateTime.parse(value);
+String _driverDateTimeToJson(DateTime value) => value.toIso8601String();
 
-  factory DriverModel.fromMap(Map<String, dynamic> map) {
-    return DriverModel(
-      driverId: map['driverId'] as String? ?? '',
-      userId: map['userId'] as String? ?? '',
-      vehicleType: map['vehicleType'] as String? ?? '',
-      vehicleNumber: map['vehicleNumber'] as String? ?? '',
-      licenseNumber: map['licenseNumber'] as String? ?? '',
-      isOnline: map['isOnline'] as bool? ?? false,
-      currentLat: (map['currentLat'] as num?)?.toDouble() ?? 0.0,
-      currentLng: (map['currentLng'] as num?)?.toDouble() ?? 0.0,
-      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
-      totalDeliveries: map['totalDeliveries'] as int? ?? 0,
-      createdAt: DateTime.parse(map['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-    );
+@freezed
+abstract class DriverModel with _$DriverModel {
+  const factory DriverModel({
+    @Default('') String driverId,
+    @Default('') String userId,
+    @Default('') String vehicleType,
+    @Default('') String vehicleNumber,
+    @Default('') String licenseNumber,
+    @Default(false) bool isOnline,
+    @Default(0.0) double currentLat,
+    @Default(0.0) double currentLng,
+    @Default(0.0) double rating,
+    @Default(0) int totalDeliveries,
+    @JsonKey(toJson: _driverDateTimeToJson, fromJson: _driverDateTimeFromJson)
+    required DateTime createdAt,
+  }) = _DriverModel;
+
+  const DriverModel._();
+
+  factory DriverModel.fromJson(Map<String, dynamic> json) =>
+      _$DriverModelFromJson(json);
+
+  static DriverModel fromMap(Map<String, dynamic> map) {
+    return DriverModel.fromJson({
+      'createdAt': DateTime.now().toIso8601String(),
+      ...map,
+    });
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'driverId': driverId,
-      'userId': userId,
-      'vehicleType': vehicleType,
-      'vehicleNumber': vehicleNumber,
-      'licenseNumber': licenseNumber,
-      'isOnline': isOnline,
-      'currentLat': currentLat,
-      'currentLng': currentLng,
-      'rating': rating,
-      'totalDeliveries': totalDeliveries,
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
-
-  DriverModel copyWith({
-    String? vehicleType,
-    String? vehicleNumber,
-    String? licenseNumber,
-    bool? isOnline,
-    double? currentLat,
-    double? currentLng,
-    double? rating,
-    int? totalDeliveries,
-  }) {
-    return DriverModel(
-      driverId: driverId,
-      userId: userId,
-      vehicleType: vehicleType ?? this.vehicleType,
-      vehicleNumber: vehicleNumber ?? this.vehicleNumber,
-      licenseNumber: licenseNumber ?? this.licenseNumber,
-      isOnline: isOnline ?? this.isOnline,
-      currentLat: currentLat ?? this.currentLat,
-      currentLng: currentLng ?? this.currentLng,
-      rating: rating ?? this.rating,
-      totalDeliveries: totalDeliveries ?? this.totalDeliveries,
-      createdAt: createdAt,
-    );
-  }
-
-  @override
-  List<Object?> get props => [driverId, userId, vehicleType, vehicleNumber, licenseNumber, isOnline, currentLat, currentLng, rating, totalDeliveries, createdAt];
+  Map<String, dynamic> toMap() => toJson();
 
   void validate() {
     if (driverId.trim().isEmpty) {
@@ -100,10 +50,14 @@ class DriverModel extends Equatable {
       throw const ValidationException(message: 'Vehicle type is required');
     }
     if (vehicleNumber.trim().isEmpty || vehicleNumber.trim().length > 20) {
-      throw const ValidationException(message: 'Vehicle number must be 1–20 characters');
+      throw const ValidationException(
+        message: 'Vehicle number must be 1–20 characters',
+      );
     }
     if (licenseNumber.trim().isEmpty || licenseNumber.trim().length > 30) {
-      throw const ValidationException(message: 'License number must be 1–30 characters');
+      throw const ValidationException(
+        message: 'License number must be 1–30 characters',
+      );
     }
   }
 }
